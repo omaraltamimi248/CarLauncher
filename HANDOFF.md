@@ -595,3 +595,13 @@ APK: md5 `ef878293c10c32320d681d68a1c038a2` — **لم يُثبَّت على ش�
   \`city_lat/city_lon/city_name\` + \`onboarded=1\`. المدينة من حائل أو GPS (\`Native.pos()\`) أو
   بحث عبر open-meteo geocoding. مفتاح التحديث التلقائي صار \`ui/upd_auto\`.
 - \`callJs\` صار لا ينفّذ قبل \`onPageFinished\` (\`pageReady\`) → انتهى خطأ \`setCarState is not defined\`.
+
+## تحديث ٥ نوفمبر (تكملة): لوحة البداية — مدن + صوتين + معاينات
+
+- المدينة: شبكة ١٥ مدينة سعودية + «موقع السيارة»، بدون بحث نصي. الإحداثيات في `data-lat/data-lon`.
+- الصوت: `iqamaVol` مستقل في Java (`ui/iqama_vol`)، و`playAsset` يختار المستوى حسب الملف.
+  أزرار «تجربة» تنادي `previewSound(adhan|iqama)` وتوقف تلقائياً بعد ٥ ثواني (`previewStop`)،
+  والضغط مرة ثانية يوقف فوراً (`stopPreview`).
+- الشكل: معاينات مصغّرة مرسومة بـ CSS (`.prev`/`.m-map`/`.m-panel`/`.m-card`) بدل النص،
+  للواجهة (عائم/مربعات) والخريطة (كامل/داخل مربع).
+- نقاط التقدم صارت LTR (تبدأ من اليسار) أوضح للعين.

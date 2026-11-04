@@ -489,20 +489,20 @@
     align-items:center; justify-content:center;
     background:radial-gradient(1200px 700px at 50% -10%, #16202E 0%, #080A0E 62%); }
   .setup-ov.on { display:flex; }
-  .setup-card { width:560px; border-radius:28px; background:linear-gradient(160deg,#15181E,#0E1115);
-    border:1px solid rgba(255,255,255,.08); box-shadow:0 30px 80px rgba(0,0,0,.6); padding:20px 24px 16px; }
-  .setup-dots { display:flex; gap:8px; justify-content:center; margin-bottom:16px; }
+  .setup-card { width:560px; border-radius:24px; background:linear-gradient(160deg,#15181E,#0E1115);
+    border:1px solid rgba(255,255,255,.08); box-shadow:0 30px 80px rgba(0,0,0,.6); padding:16px 22px 14px; }
+  .setup-dots { display:flex; gap:8px; justify-content:center; margin-bottom:12px; direction:ltr; }
   .setup-dots i { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.18); }
   .setup-dots i.on { background:#4C82E8; width:22px; border-radius:6px; }
-  .setup-h { font-size:26px; font-weight:600; color:#EEF2F8; }
+  .setup-h { font-size:24px; font-weight:600; color:#EEF2F8; }
   .setup-sub { font-size:13.5px; color:#8A93A1; margin-top:5px; }
-  .setup-step { display:none; min-height:250px; }
+  .setup-step { display:none; }
   .setup-step.on { display:block; }
   .setup-opts { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
   .setup-opt { display:block; width:100%; box-sizing:border-box; padding:15px 18px; border-radius:16px; font-size:16.5px; background:rgba(255,255,255,.05);
     border:1px solid rgba(255,255,255,.08); color:#C9D2DE; font-size:15px; }
   .setup-opt.on { background:rgba(76,130,232,.22); border-color:rgba(143,182,255,.45); color:#EAF1FF; }
-  .setup-row { display:flex; align-items:center; justify-content:space-between; margin-top:12px;
+  .setup-row { display:flex; align-items:center; justify-content:space-between; margin-top:10px;
     padding:11px 14px; border-radius:16px; background:rgba(255,255,255,.035);
     border:1px solid rgba(255,255,255,.06); }
   .setup-row .lbl { font-size:14.5px; color:#C9D2DE; }
@@ -520,6 +520,21 @@
   .setup-vol { display:flex; align-items:center; gap:10px; }
   .setup-vol input { width:180px; }
   .setup-vol span { font-size:12.5px; color:#8A93A1; direction:ltr; }
+  .setup-mini-h { font-size:12.5px; color:#7C8798; margin-top:10px; }
+  .setup-prevs { display:flex; gap:10px; margin-top:6px; }
+  .prev { flex:1; border-radius:14px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); padding:8px; }
+  .prev.on { border-color:rgba(143,182,255,.5); background:rgba(76,130,232,.14); }
+  .prev .shot { position:relative; height:56px; border-radius:9px; overflow:hidden; background:linear-gradient(135deg,#26303F,#0F141B); }
+  .prev .lbl { display:block; text-align:center; font-size:12.5px; color:#AEB7C4; margin-top:6px; }
+  .m-map { position:absolute; background:linear-gradient(150deg,#5688B5,#22313F); }
+  .m-panel { position:absolute; background:rgba(8,11,15,.78); }
+  .m-card { position:absolute; border-radius:6px; background:rgba(255,255,255,.20); border:1px solid rgba(255,255,255,.18); }
+  .m-line { position:absolute; height:3px; border-radius:2px; background:rgba(226,236,250,.55); }
+  .setup-cities { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .city { flex:0 0 calc(25% - 6px); box-sizing:border-box; text-align:center; padding:9px 4px; border-radius:12px;
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); font-size:14px; color:#C9D2DE; }
+  .city.on { background:rgba(76,130,232,.22); border-color:rgba(143,182,255,.45); color:#EAF1FF; }
+
 
 </style>
 <script>/* placeholders قبل تحميل الواجهة: جافا تنادي هذه الدوال من أول ثانية */
@@ -1885,41 +1900,89 @@
       <div class="setup-step on" data-step="1">
         <div class="setup-h">وين ساكن؟</div>
         <div class="setup-sub">نستخدمها للطقس ومواقيت الصلاة</div>
-        <div class="setup-opts">
-          <div class="setup-opt on" id="cityHail" onclick="__st.city('hail')">حائل</div>
-          <div class="setup-opt" id="cityGps" onclick="__st.city('gps')">موقع السيارة (GPS)</div>
-        </div>
-        <div class="setup-search">
-          <input id="cityIn" placeholder="أو اكتب اسم المدينة…">
-          <div class="setup-btn sm" onclick="__st.search()">بحث</div>
+        <div class="setup-cities" id="cityGrid">
+          <div class="city on" data-lat="27.5236" data-lon="41.6925" onclick="__st.cityPick(this)">حائل</div>
+          <div class="city" data-lat="24.7136" data-lon="46.6753" onclick="__st.cityPick(this)">الرياض</div>
+          <div class="city" data-lat="21.4858" data-lon="39.1925" onclick="__st.cityPick(this)">جدة</div>
+          <div class="city" data-lat="21.3891" data-lon="39.8579" onclick="__st.cityPick(this)">مكة</div>
+          <div class="city" data-lat="24.4672" data-lon="39.6111" onclick="__st.cityPick(this)">المدينة</div>
+          <div class="city" data-lat="26.4207" data-lon="50.0888" onclick="__st.cityPick(this)">الدمام</div>
+          <div class="city" data-lat="26.2172" data-lon="50.1971" onclick="__st.cityPick(this)">الخبر</div>
+          <div class="city" data-lat="21.2703" data-lon="40.4158" onclick="__st.cityPick(this)">الطائف</div>
+          <div class="city" data-lat="26.326" data-lon="43.975" onclick="__st.cityPick(this)">بريدة</div>
+          <div class="city" data-lat="28.3835" data-lon="36.5662" onclick="__st.cityPick(this)">تبوك</div>
+          <div class="city" data-lat="18.2164" data-lon="42.5053" onclick="__st.cityPick(this)">أبها</div>
+          <div class="city" data-lat="18.306" data-lon="42.729" onclick="__st.cityPick(this)">خميس مشيط</div>
+          <div class="city" data-lat="17.4917" data-lon="44.1322" onclick="__st.cityPick(this)">نجران</div>
+          <div class="city" data-lat="16.8892" data-lon="42.5511" onclick="__st.cityPick(this)">جيزان</div>
+          <div class="city" data-lat="28.434" data-lon="45.9636" onclick="__st.cityPick(this)">حفر الباطن</div>
+          <div class="city" onclick="__st.cityGps(this)">موقع السيارة</div>
         </div>
         <div id="cityMsg" style="margin-top:8px;color:#8A93A1;font-size:12.5px"></div>
       </div>
 
       <div class="setup-step" data-step="2">
         <div class="setup-h">الشكل</div>
-        <div class="setup-sub">تقدر تغيّرها لاحقاً من الخيارات</div>
+        <div class="setup-sub">اختر بالعين — وتقدر تغيّرها لاحقاً</div>
         <div class="setup-row"><span class="lbl">الوضع</span>
           <div class="seg" id="segTheme2">
             <div onclick="__st.theme('auto')" data-v="auto">تلقائي</div>
             <div onclick="__st.theme('day')" data-v="day">نهاري</div>
             <div onclick="__st.theme('night')" data-v="night">ليلي</div>
           </div></div>
-        <div class="setup-row"><span class="lbl">الواجهة</span>
-          <div class="seg" id="segUi2">
-            <div onclick="__st.ui('float')" data-v="float">عائم</div>
-            <div onclick="__st.ui('cards')" data-v="cards">مربعات</div>
-          </div></div>
-        <div class="setup-row"><span class="lbl">الخريطة</span>
-          <div class="seg" id="segMap2">
-            <div onclick="__st.map(0)" data-v="0">كامل الشاشة</div>
-            <div onclick="__st.map(1)" data-v="1">داخل مربع</div>
-          </div></div>
+        <div class="setup-mini-h">الواجهة</div>
+        <div class="setup-prevs">
+          <div class="prev on" id="pUiFloat" onclick="__st.ui('float')">
+            <div class="shot">
+              <div class="m-panel" style="right:0;top:0;bottom:0;width:44%;opacity:.55"></div>
+              <div class="m-line" style="right:12px;top:16px;width:26%"></div>
+              <div class="m-line" style="right:12px;top:28px;width:32%"></div>
+              <div class="m-line" style="right:12px;top:40px;width:20%"></div>
+              <div class="m-line" style="right:12px;top:52px;width:28%"></div>
+            </div><span class="lbl">عائم</span>
+          </div>
+          <div class="prev" id="pUiCards" onclick="__st.ui('cards')">
+            <div class="shot">
+              <div class="m-card" style="right:10px;top:10px;width:34%;height:24px"></div>
+              <div class="m-card" style="right:10px;top:40px;width:34%;height:22px"></div>
+            </div><span class="lbl">مربعات</span>
+          </div>
+        </div>
+        <div class="setup-mini-h">الخريطة</div>
+        <div class="setup-prevs">
+          <div class="prev on" id="pMapFull" onclick="__st.map(0)">
+            <div class="shot">
+              <div class="m-map" style="left:0;top:0;right:0;bottom:0"></div>
+              <div class="m-panel" style="right:0;top:0;bottom:0;width:36%"></div>
+              <div class="m-line" style="right:8px;top:16px;width:22%"></div>
+              <div class="m-line" style="right:8px;top:28px;width:18%"></div>
+            </div><span class="lbl">كامل الشاشة</span>
+          </div>
+          <div class="prev" id="pMapBox" onclick="__st.map(1)">
+            <div class="shot">
+              <div class="m-map" style="left:8px;top:9px;right:34%;bottom:9px;border-radius:8px"></div>
+              <div class="m-line" style="right:10px;top:18px;width:20%"></div>
+              <div class="m-line" style="right:10px;top:30px;width:16%"></div>
+            </div><span class="lbl">داخل مربع</span>
+          </div>
+        </div>
       </div>
 
       <div class="setup-step" data-step="3">
         <div class="setup-h">الصلاة</div>
-        <div class="setup-sub">الأذان والإقامة</div>
+        <div class="setup-sub">صوت مستقل للأذان والإقامة</div>
+        <div class="setup-row"><span class="lbl">الأذان</span>
+          <div class="setup-vol">
+            <input type="range" id="stVolAdhan" min="0" max="100" value="100" oninput="__st.vol('adhan', this.value)">
+            <span id="stVolAdhanLbl">100%</span>
+            <div class="setup-btn sm" id="btnAdhan" onclick="__st.preview('adhan')">تجربة</div>
+          </div></div>
+        <div class="setup-row"><span class="lbl">الإقامة</span>
+          <div class="setup-vol">
+            <input type="range" id="stVolIqama" min="0" max="100" value="100" oninput="__st.vol('iqama', this.value)">
+            <span id="stVolIqamaLbl">100%</span>
+            <div class="setup-btn sm" id="btnIqama" onclick="__st.preview('iqama')">تجربة</div>
+          </div></div>
         <div class="setup-row"><span class="lbl">تشغيل الأذان تلقائياً</span>
           <div class="seg" id="segAdhan2">
             <div onclick="__st.tog('adhan',true)" data-v="1">نعم</div>
@@ -1930,9 +1993,6 @@
             <div onclick="__st.tog('iqama',true)" data-v="1">نعم</div>
             <div onclick="__st.tog('iqama',false)" data-v="0">لا</div>
           </div></div>
-        <div class="setup-row"><span class="lbl">مستوى الصوت</span>
-          <div class="setup-vol"><input type="range" id="stVol" min="0" max="100" value="100"
-               oninput="__st.vol(this.value)"><span id="stVolLbl">100%</span></div></div>
       </div>
 
       <div class="setup-step" data-step="4">
@@ -1960,8 +2020,8 @@
 <script>
 (function () {
   var ov = document.getElementById('setup');
-  var S = { step: 1, city: 'hail', lat: 27.5236, lon: 41.6925, name: 'حائل', theme: 'auto',
-            ui: 'float', map: 0, adhan: true, iqama: true, vol: 100, btOff: false, autoUpd: true };
+  var S = { step: 1, city: 'حائل', lat: 27.5236, lon: 41.6925, theme: 'auto', ui: 'float', map: 0,
+            adhan: true, iqama: true, volAdhan: 100, volIqama: 100, btOff: false, autoUpd: true };
   function $(id) { return document.getElementById(id); }
   function mark(segId, val) {
     var el = $(segId); if (!el) return;
@@ -1978,18 +2038,26 @@
     for (var j = 0; j < dots.length; j++) dots[j].classList.toggle('on', j === S.step - 1);
     $('stBack').style.display = S.step === 1 ? 'none' : 'block';
     $('stNext').textContent = S.step === 4 ? 'ابدأ' : 'التالي';
-    mark('segTheme2', S.theme); mark('segUi2', S.ui); mark('segMap2', S.map);
+    mark('segTheme2', S.theme);
     mark('segAdhan2', S.adhan ? 1 : 0); mark('segIqama2', S.iqama ? 1 : 0);
     mark('segBt2', S.btOff ? 1 : 0); mark('segUpd2', S.autoUpd ? 1 : 0);
-    $('cityHail').classList.toggle('on', S.city === 'hail');
-    $('cityGps').classList.toggle('on', S.city === 'gps');
+    $('pUiFloat').classList.toggle('on', S.ui === 'float');
+    $('pUiCards').classList.toggle('on', S.ui === 'cards');
+    $('pMapFull').classList.toggle('on', S.map === 0);
+    $('pMapBox').classList.toggle('on', S.map === 1);
+    var chips = ov.querySelectorAll('.city');
+    for (var k = 0; k < chips.length; k++) {
+      var la = parseFloat(chips[k].getAttribute('data-lat'));
+      var lo = parseFloat(chips[k].getAttribute('data-lon'));
+      chips[k].classList.toggle('on', !isNaN(la) && Math.abs(la - S.lat) < 0.001 && Math.abs(lo - S.lon) < 0.001);
+    }
   }
   function finish() {
     try {
       localStorage.setItem('onboarded', '1');
       localStorage.setItem('city_lat', String(S.lat));
       localStorage.setItem('city_lon', String(S.lon));
-      localStorage.setItem('city_name', S.name);
+      localStorage.setItem('city_name', S.city);
     } catch (e) {}
     LAT = S.lat; LON = S.lon;
     try { setTheme(S.theme); } catch (e) {}
@@ -1997,7 +2065,8 @@
     try { setMapBox(!!S.map); } catch (e) {}
     try { adhanSoundOn = S.adhan; localStorage.setItem('adhan_sound', S.adhan ? '1' : '0'); } catch (e) {}
     try { iqamaSoundOn = S.iqama; localStorage.setItem('iqama_sound', S.iqama ? '1' : '0'); } catch (e) {}
-    try { Native.setAdhanVolume(S.vol); } catch (e) {}
+    try { Native.setAdhanVolume(S.volAdhan); Native.setIqamaVolume(S.volIqama); } catch (e) {}
+    try { Native.stopPreview(); } catch (e) {}
     try { if (S.btOff && Native.btOn()) Native.btToggle(); } catch (e) {}
     try { Native.setAutoUpdate(!!S.autoUpd); } catch (e) {}
     try { loadWeather(); } catch (e) {}
@@ -2006,43 +2075,47 @@
     ov.classList.remove('on');
   }
   window.__st = {
-    city: function (k) {
-      if (k === 'gps') {
-        var p = ''; try { p = Native.pos() || ''; } catch (e) {}
-        var a = p.split(',');
-        if (a.length === 2 && !isNaN(parseFloat(a[0])) && !isNaN(parseFloat(a[1]))) {
-          S.city = 'gps'; S.lat = parseFloat(a[0]); S.lon = parseFloat(a[1]); S.name = 'موقع السيارة';
-          $('cityMsg').textContent = 'تم أخذ موقع السيارة';
-        } else {
-          S.city = 'hail'; S.lat = 27.5236; S.lon = 41.6925; S.name = 'حائل';
-          $('cityMsg').textContent = 'ما فيه إشارة GPS الآن — بنستخدم حائل';
-        }
-      } else {
-        S.city = 'hail'; S.lat = 27.5236; S.lon = 41.6925; S.name = 'حائل';
-        $('cityMsg').textContent = '';
-      }
+    cityPick: function (el) {
+      S.city = el.textContent.trim();
+      S.lat = parseFloat(el.getAttribute('data-lat'));
+      S.lon = parseFloat(el.getAttribute('data-lon'));
+      $('cityMsg').textContent = '';
       paint();
     },
-    search: function () {
-      var q = ($('cityIn').value || '').trim();
-      if (!q) { $('cityMsg').textContent = 'اكتب اسم المدينة'; return; }
-      $('cityMsg').textContent = 'جارٍ البحث…';
-      fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=ar&format=json&name=' + encodeURIComponent(q))
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          if (!d.results || !d.results.length) { $('cityMsg').textContent = 'ما لقيت هذه المدينة'; return; }
-          var r = d.results[0];
-          S.city = 'custom'; S.lat = r.latitude; S.lon = r.longitude; S.name = r.name;
-          $('cityMsg').textContent = 'اخترنا: ' + r.name + (r.country ? ' · ' + r.country : '');
-          paint();
-        })
-        .catch(function () { $('cityMsg').textContent = 'تعذر البحث — تأكد من الإنترنت'; });
+    cityGps: function (el) {
+      var p = ''; try { p = Native.pos() || ''; } catch (e) {}
+      var a = p.split(',');
+      if (a.length === 2 && !isNaN(parseFloat(a[0])) && !isNaN(parseFloat(a[1]))) {
+        S.city = 'موقع السيارة'; S.lat = parseFloat(a[0]); S.lon = parseFloat(a[1]);
+        $('cityMsg').textContent = 'تم أخذ موقع السيارة';
+      } else {
+        $('cityMsg').textContent = 'ما فيه إشارة GPS الآن — اختر مدينة';
+      }
+      paint();
     },
     theme: function (v) { S.theme = v; paint(); },
     ui: function (v) { S.ui = v; paint(); },
     map: function (v) { S.map = +v; paint(); },
     tog: function (k, v) { S[k] = !!v; paint(); },
-    vol: function (v) { S.vol = parseInt(v, 10) || 0; $('stVolLbl').textContent = S.vol + '%'; },
+    vol: function (which, v) {
+      v = parseInt(v, 10) || 0;
+      if (which === 'adhan') { S.volAdhan = v; $('stVolAdhanLbl').textContent = v + '%'; }
+      else { S.volIqama = v; $('stVolIqamaLbl').textContent = v + '%'; }
+    },
+    preview: function (which) {
+      var b = $(which === 'adhan' ? 'btnAdhan' : 'btnIqama');
+      var other = $(which === 'adhan' ? 'btnIqama' : 'btnAdhan');
+      var on = b.getAttribute('data-on') === '1';
+      try { Native.stopPreview(); } catch (e) {}
+      b.textContent = 'تجربة'; b.setAttribute('data-on', '0');
+      other.textContent = 'تجربة'; other.setAttribute('data-on', '0');
+      if (on) return;
+      try { Native.previewSound(which); } catch (e) {}
+      b.textContent = 'إيقاف'; b.setAttribute('data-on', '1');
+      setTimeout(function () {
+        if (b.getAttribute('data-on') === '1') { b.textContent = 'تجربة'; b.setAttribute('data-on', '0'); }
+      }, 5000);
+    },
     next: function () { if (S.step < 4) { S.step++; paint(); } else finish(); },
     prev: function () { if (S.step > 1) { S.step--; paint(); } }
   };

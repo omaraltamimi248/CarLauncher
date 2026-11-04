@@ -101,6 +101,8 @@ public class MainActivity extends Activity {
     private View activityView;      // android.app.ActivityView (API 29 فقط)
     private Object activityViewObj;
     private float adhanVol = 0.8f;
+    private float iqamaVol = 1f;
+    private final Runnable previewStop = new Runnable() { public void run() { stopSfx(); } };
     private boolean duckOn = true;
     private AudioManager am;
     private AudioManager.OnAudioFocusChangeListener afListener;
@@ -440,7 +442,8 @@ public class MainActivity extends Activity {
         handler.post(netTick);
         try { btWantOff = getSharedPreferences("ui", 0).getBoolean("bt_off", false); } catch (Exception ignored) {}
         try {
-            adhanVol = 1f;
+            adhanVol = getSharedPreferences("ui", 0).getFloat("adhan_vol", 1f);
+            iqamaVol = getSharedPreferences("ui", 0).getFloat("iqama_vol", 1f);
             duckOn = getSharedPreferences("ui", 0).getBoolean("adhan_duck", true);
         } catch (Exception ignored) {}
         am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -753,7 +756,8 @@ public class MainActivity extends Activity {
                         }
                     });
                     mp.prepare();
-                    mp.setVolume(adhanVol, adhanVol);
+                    float v = asset.startsWith("iqama") ? iqamaVol : adhanVol;
+                    mp.setVolume(v, v);
                     if (duckOn && am != null) {
                         try { am.requestAudioFocus(afListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK); } catch (Exception ignored) {}
                     }
@@ -1124,6 +1128,26 @@ public class MainActivity extends Activity {
         @JavascriptInterface public void adhanSound() { playAsset("adhan.ogg"); }
         @JavascriptInterface public void iqamaSound() { playAsset("iqama.ogg"); }
         @JavascriptInterface public void stopAdhan() { stopSfx(); }
+
+        @JavascriptInterface public void setIqamaVolume(int pct) {
+            if (pct < 0) pct = 0; if (pct > 100) pct = 100;
+            iqamaVol = pct / 100f;
+            try { getSharedPreferences("ui", 0).edit().putFloat("iqama_vol", iqamaVol).apply(); } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface public int iqamaVolume() { return Math.round(iqamaVol * 100); }
+
+        /** تشغيل تجربة ٥ ثواني (adhan|iqama) */
+        @JavascriptInterface public void previewSound(String which) {
+            playAsset("iqama".equals(which) ? "iqama.ogg" : "adhan.ogg");
+            handler.removeCallbacks(previewStop);
+            handler.postDelayed(previewStop, 5000L);
+        }
+
+        @JavascriptInterface public void stopPreview() {
+            handler.removeCallbacks(previewStop);
+            stopSfx();
+        }
 
         @JavascriptInterface public void mediaPrev() { mediaKey(88); }
         @JavascriptInterface public void mediaNext() { mediaKey(87); }
