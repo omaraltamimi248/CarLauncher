@@ -535,3 +535,16 @@ APK: md5 `ef878293c10c32320d681d68a1c038a2` — **لم يُثبَّت على ش�
   وقائمة المواقيت تعرض ٤ صفوف تبدأ من الصلاة الحالية (`from = min(cur, len-4)`).
 - الساعة: أرقام داخل `.sp-clock .hm` واللاحقة `.ap` (17px) بجانبها، flex RTL.
 - line-height 1.2 لصفوف sp-row/rain-row عشان الأربعة صفوف تدخل بدون قص.
+
+## تحديث ٤ نوفمبر: إصلاحات مراجعة Codex (الذاكرة والستة الباقية)
+
+- الذاكرة: `onDestroy` يصفّر `instance`، ويستدعي `removeUpdates(locListener)` و`removeCallbacks(btTick)`.
+- الجسر: `shouldOverrideUrlLoading` يمنع أي تنقل خارج `file:///android_asset/` في WebView الرئيسي والـoverlay.
+- `startPack`: قفل `packRunning` (AtomicBoolean) يمنع نسختين متزامنتين، وملف `.tmp` صار باسم الـThread،
+  ولو فشل `renameTo` يُحذف بدل ما يبقى.
+- الصوت: `sfxLock` يزامن `playAsset`/`stopSfx`/`onCompletion`، و`onCompletion` يصفّر الحقل فقط لو هو نفس المشغل.
+- الإغلاق: `overlayWeb` و`web` يُدمران (`destroy()`) في `hideOverlayPanel` و`onDestroy`.
+- الإذن: `requestPermissions(ACCESS_FINE_LOCATION)` عند الإقلاع لو غير ممنوح، و`onRequestPermissionsResult`
+  يعيد `startGps()`. (على السيارة الإذن ممنوح أصلاً بـ`pm install -g`.)
+- `ui.html`: `img._net = !img._local` — بلاطات الشبكة تدخل الكاش؛ تحقق فعلي: ٩٩ بلاطة في `files/tiles/light/16`.
+- md5: d4f64141…09c4.

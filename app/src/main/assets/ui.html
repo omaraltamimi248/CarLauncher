@@ -1046,8 +1046,9 @@
           img = document.createElement('img');
           img.className = 'mtile';
           img._x = (((tx % n) + n) % n); img._y = ty; img._z = MAPZ;
-          img._net = false; img._tries = 0;
+          img._tries = 0;
           img._local = localTileUrl(MAPZ, img._x, ty);
+          img._net = !img._local;
           img.src = img._local || netTileUrl(MAPZ, img._x, ty);
           img.onerror = function () { tileFail(this); };
           img.onload = function () { tileOk(this); };

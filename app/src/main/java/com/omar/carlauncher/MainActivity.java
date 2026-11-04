@@ -82,6 +82,9 @@ public class MainActivity extends Activity {
     private static final String BT_NODE = "/sys/devices/platform/bt-ctrl/nPOEN";
     private boolean btWantOff = false;
     private MediaPlayer sfxPlayer;
+    private final Object sfxLock = new Object();
+    private final java.util.concurrent.atomic.AtomicBoolean packRunning =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
     private FrameLayout rootLayer;
     private SurfaceView hudBox;
     private VirtualDisplay hudVd;
@@ -156,6 +159,12 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(true);
         web.setBackgroundColor(Color.BLACK);
         web.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return blockExternal(url);
+            }
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
+                return blockExternal(req.getUrl().toString());
+            }
             @Override public void onPageFinished(WebView view, String url) {
                 currentState = "";
                 updateState();
@@ -193,7 +202,11 @@ public class MainActivity extends Activity {
         web.loadUrl("file:///android_asset/ui.html?v=" + System.currentTimeMillis());
 
         lm = (LocationManager) getSystemService(LOCATION_SERVICE);
-        startGps();
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            try { requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1001); } catch (Exception ignored) {}
+        } else {
+            startGps();
+        }
 
         handler.post(tick);
         handler.post(netTick);
@@ -207,6 +220,14 @@ public class MainActivity extends Activity {
             @Override public void onAudioFocusChange(int change) { }
         };
         handler.postDelayed(btTick, 10000);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int code, String[] perms, int[] res) {
+        super.onRequestPermissionsResult(code, perms, res);
+        if (code == 1001 && res != null && res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) {
+            startGps();
+        }
     }
 
     private void hideSystemUi() {
@@ -325,6 +346,12 @@ public class MainActivity extends Activity {
         if (web != null) web.evaluateJavascript(js, null);
     }
 
+    /** يسمح فقط بالصفحات المحلية داخل WebView؛ أي تنقل خارجي يُمنع */
+    private boolean blockExternal(String url) {
+        if (url == null) return true;
+        return !url.startsWith("file:///android_asset/");
+    }
+
     @Override
     protected void onDestroy() {
         handler.removeCallbacks(tick);
@@ -334,6 +361,22 @@ public class MainActivity extends Activity {
             if (lm != null && locListener != null) lm.removeUpdates(locListener);
         } catch (Exception ignored) {}
         locListener = null;
+        try { stopSfx(); } catch (Exception ignored) {}
+        try {
+            if (overlayWeb != null) {
+                if (overlayWm != null) overlayWm.removeView(overlayWeb);
+                overlayWeb.destroy();
+            }
+        } catch (Exception ignored) {}
+        overlayWeb = null;
+        try {
+            if (web != null) {
+                if (rootLayer != null) rootLayer.removeView(web);
+                web.loadUrl("about:blank");
+                web.destroy();
+            }
+        } catch (Exception ignored) {}
+        web = null;
         if (instance == this) instance = null;
         super.onDestroy();
     }
@@ -388,12 +431,12 @@ public class MainActivity extends Activity {
             c.setConnectTimeout(8000); c.setReadTimeout(8000);
             c.setRequestProperty("User-Agent", "CarLauncher/1.0");
             InputStream in = c.getInputStream();
-            File tmp = new File(f.getAbsolutePath() + ".tmp");
+            File tmp = new File(f.getAbsolutePath() + "." + Thread.currentThread().getId() + ".tmp");
             FileOutputStream out = new FileOutputStream(tmp);
             byte[] buf = new byte[8192]; int r;
             while ((r = in.read(buf)) > 0) out.write(buf, 0, r);
             out.close(); in.close(); c.disconnect();
-            if (tmp.length() > 500) tmp.renameTo(f); else tmp.delete();
+            if (tmp.length() > 500) { if (!tmp.renameTo(f)) tmp.delete(); } else tmp.delete();
         } catch (Exception ignored) {}
     }
 
@@ -432,28 +475,39 @@ public class MainActivity extends Activity {
     /** يشغّل ملف صوت من assets (adhan.ogg / iqama.ogg) */
     private void playAsset(final String asset) {
         new Thread(new Runnable() { public void run() {
+            MediaPlayer mp = null;
             try {
-                if (sfxPlayer != null) { try { sfxPlayer.release(); } catch (Exception ignored) {} sfxPlayer = null; }
-                AssetFileDescriptor afd = getAssets().openFd(asset);
-                final MediaPlayer mp = new MediaPlayer();
-                mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
-                afd.close();
-                mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
-                mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-                    @Override public void onCompletion(MediaPlayer m) {
-                        try { m.release(); } catch (Exception ignored) {}
-                        if (duckOn && am != null) { try { am.abandonAudioFocus(afListener); } catch (Exception ignored) {} }
+                synchronized (sfxLock) {
+                    if (sfxPlayer != null) {
+                        try { sfxPlayer.stop(); } catch (Exception ignored) {}
+                        try { sfxPlayer.release(); } catch (Exception ignored) {}
+                        sfxPlayer = null;
                     }
-                });
-                mp.prepare();
-                mp.setVolume(adhanVol, adhanVol);
-                if (duckOn && am != null) {
-                    try { am.requestAudioFocus(afListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK); } catch (Exception ignored) {}
+                    AssetFileDescriptor afd = getAssets().openFd(asset);
+                    mp = new MediaPlayer();
+                    mp.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+                    afd.close();
+                    mp.setAudioStreamType(AudioManager.STREAM_MUSIC);
+                    mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                        @Override public void onCompletion(MediaPlayer m) {
+                            synchronized (sfxLock) {
+                                if (sfxPlayer == m) sfxPlayer = null;
+                            }
+                            try { m.release(); } catch (Exception ignored) {}
+                            if (duckOn && am != null) { try { am.abandonAudioFocus(afListener); } catch (Exception ignored) {} }
+                        }
+                    });
+                    mp.prepare();
+                    mp.setVolume(adhanVol, adhanVol);
+                    if (duckOn && am != null) {
+                        try { am.requestAudioFocus(afListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK); } catch (Exception ignored) {}
+                    }
+                    mp.start();
+                    sfxPlayer = mp;
                 }
-                mp.start();
-                sfxPlayer = mp;
                 android.util.Log.d("CarLauncher", "sound " + asset);
             } catch (Exception e) {
+                if (mp != null) { try { mp.release(); } catch (Exception ignored) {} }
                 android.util.Log.d("CarLauncher", "sound failed " + asset + ": " + e);
             }
         }}).start();
@@ -461,10 +515,14 @@ public class MainActivity extends Activity {
 
     private void stopSfx() {
         new Thread(new Runnable() { public void run() {
-            try {
-                if (sfxPlayer != null) { sfxPlayer.stop(); sfxPlayer.release(); sfxPlayer = null; }
-                if (duckOn && am != null) { try { am.abandonAudioFocus(afListener); } catch (Exception ignored) {} }
-            } catch (Exception ignored) {}
+            synchronized (sfxLock) {
+                if (sfxPlayer != null) {
+                    try { sfxPlayer.stop(); } catch (Exception ignored) {}
+                    try { sfxPlayer.release(); } catch (Exception ignored) {}
+                    sfxPlayer = null;
+                }
+            }
+            if (duckOn && am != null) { try { am.abandonAudioFocus(afListener); } catch (Exception ignored) {} }
         }}).start();
     }
 
@@ -568,6 +626,12 @@ public class MainActivity extends Activity {
             ws.setAllowFileAccess(true);
             w.setBackgroundColor(Color.TRANSPARENT);
             w.addJavascriptInterface(new Bridge(), "Native");
+            w.setWebViewClient(new WebViewClient() {
+                @Override public boolean shouldOverrideUrlLoading(WebView v, String u) { return blockExternal(u); }
+                @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
+                    return blockExternal(r.getUrl().toString());
+                }
+            });
             w.loadUrl("file:///android_asset/ui.html");
 
             overlayWm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -589,6 +653,12 @@ public class MainActivity extends Activity {
     void hideOverlayPanel() {
         try {
             if (overlayWeb != null && overlayWm != null) overlayWm.removeView(overlayWeb);
+        } catch (Exception ignored) {}
+        try {
+            if (overlayWeb != null) {
+                overlayWeb.loadUrl("about:blank");
+                overlayWeb.destroy();
+            }
         } catch (Exception ignored) {}
         overlayWeb = null;
         try {
@@ -835,8 +905,13 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void startPack() {
+            if (!packRunning.compareAndSet(false, true)) {
+                android.util.Log.d("CarLauncher", "pack already running — skipped");
+                return;
+            }
             new Thread(new Runnable() {
                 @Override public void run() {
+                  try {
                     final int Z = 16;
                     double lat = 27.5236, lon = 41.6925;
                     double dLat = 0.180, dLon = 0.206;
@@ -871,6 +946,12 @@ public class MainActivity extends Activity {
                         });
                         ws[w].start();
                     }
+                    for (int w = 0; w < workers; w++) {
+                        try { ws[w].join(); } catch (InterruptedException ignored) {}
+                    }
+                  } finally {
+                    packRunning.set(false);
+                  }
                 }
             }).start();
         }
