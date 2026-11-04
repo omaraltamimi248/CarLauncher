@@ -144,7 +144,7 @@ public class MainActivity extends Activity {
 
     /* ---------- التحديث من GitHub Releases ---------- */
     private static final String UPDATE_API =
-            "https://api.github.com/repos/omaraltamimi248/CarLauncher/releases/latest";
+            "https://api.github.com/repos/omaraltamimi248/CarLauncher248/releases/latest";
     private static final long UPDATE_INTERVAL_MS = 6L * 3600L * 1000L;
     private final java.util.concurrent.atomic.AtomicBoolean updateBusy =
             new java.util.concurrent.atomic.AtomicBoolean(false);
