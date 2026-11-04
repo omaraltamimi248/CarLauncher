@@ -69,6 +69,7 @@ public class MainActivity extends Activity {
     private static final long FIX_STALE_MS = 10_000L;
 
     static MainActivity instance;
+    private volatile boolean pageReady = false;
     private WebView web;
     private LocationManager lm;
     private LocationListener locListener;
@@ -184,8 +185,13 @@ public class MainActivity extends Activity {
     }
 
     private void maybeAutoCheckUpdate() {
+        boolean auto = true;
         long last = 0;
-        try { last = getSharedPreferences("ui", 0).getLong("upd_last", 0); } catch (Exception ignored) {}
+        try {
+            auto = getSharedPreferences("ui", 0).getBoolean("upd_auto", true);
+            last = getSharedPreferences("ui", 0).getLong("upd_last", 0);
+        } catch (Exception ignored) {}
+        if (!auto) return;
         long ago = System.currentTimeMillis() - last;
         android.util.Log.d("CarLauncher", "update: auto-check trigger, last=" + (ago / 60000) + "m ago");
         if (ago < UPDATE_INTERVAL_MS) return;
@@ -384,8 +390,12 @@ public class MainActivity extends Activity {
                 return blockExternal(req.getUrl().toString());
             }
             @Override public void onPageFinished(WebView view, String url) {
+                pageReady = true;
                 currentState = "";
                 updateState();
+            }
+            @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                pageReady = false;
             }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest req) {
                 String u = req.getUrl().toString();
@@ -588,7 +598,7 @@ public class MainActivity extends Activity {
     }
 
     private void callJs(String js) {
-        if (web != null) web.evaluateJavascript(js, null);
+        if (web != null && pageReady) web.evaluateJavascript(js, null);
     }
 
     /** يسمح فقط بالصفحات المحلية داخل WebView؛ أي تنقل خارجي يُمنع */
@@ -1324,6 +1334,16 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void rollback() { MainActivity.this.rollback(); }
+
+        @JavascriptInterface
+        public void setAutoUpdate(boolean on) {
+            try { getSharedPreferences("ui", 0).edit().putBoolean("upd_auto", on).apply(); } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
+        public boolean autoUpdate() {
+            try { return getSharedPreferences("ui", 0).getBoolean("upd_auto", true); } catch (Exception e) { return true; }
+        }
 
         @JavascriptInterface
         public void setBrightness(final float v) {

@@ -484,7 +484,48 @@
     color:#DCE7FF; font-size:13px; }
   .day .opt-btn { background:rgba(44,98,201,.14); border-color:rgba(44,98,201,.3); color:#1E4EA8; }
   .opt-info { font-size:12.5px; color:#8A9099; direction:ltr; }
+  /* ---------- لوحة البداية (أول تشغيل) ---------- */
+  .setup-ov { position:fixed; top:0; left:0; right:0; bottom:0; z-index:9800; display:none;
+    align-items:center; justify-content:center;
+    background:radial-gradient(1200px 700px at 50% -10%, #16202E 0%, #080A0E 62%); }
+  .setup-ov.on { display:flex; }
+  .setup-card { width:560px; border-radius:28px; background:linear-gradient(160deg,#15181E,#0E1115);
+    border:1px solid rgba(255,255,255,.08); box-shadow:0 30px 80px rgba(0,0,0,.6); padding:20px 24px 16px; }
+  .setup-dots { display:flex; gap:8px; justify-content:center; margin-bottom:16px; }
+  .setup-dots i { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.18); }
+  .setup-dots i.on { background:#4C82E8; width:22px; border-radius:6px; }
+  .setup-h { font-size:26px; font-weight:600; color:#EEF2F8; }
+  .setup-sub { font-size:13.5px; color:#8A93A1; margin-top:5px; }
+  .setup-step { display:none; min-height:250px; }
+  .setup-step.on { display:block; }
+  .setup-opts { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+  .setup-opt { display:block; width:100%; box-sizing:border-box; padding:15px 18px; border-radius:16px; font-size:16.5px; background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08); color:#C9D2DE; font-size:15px; }
+  .setup-opt.on { background:rgba(76,130,232,.22); border-color:rgba(143,182,255,.45); color:#EAF1FF; }
+  .setup-row { display:flex; align-items:center; justify-content:space-between; margin-top:12px;
+    padding:11px 14px; border-radius:16px; background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.06); }
+  .setup-row .lbl { font-size:14.5px; color:#C9D2DE; }
+  .setup-search { display:flex; gap:8px; margin-top:12px; }
+  .setup-search input { flex:1; height:44px; border-radius:14px; background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.09); color:#E9EEF6; padding:0 14px;
+    font-family:inherit; font-size:14px; direction:rtl; }
+  .setup-foot { display:flex; align-items:center; margin-top:16px; gap:10px; }
+  #stNext { flex:1; }
+  #stBack { min-width:110px; }
+  .setup-btn { padding:12px 26px; border-radius:16px; font-size:16px; background:rgba(76,130,232,.28);
+    border:1px solid rgba(143,182,255,.45); color:#EAF1FF; font-size:15px; text-align:center; }
+  .setup-btn.ghost { background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.08); color:#AEB7C4; }
+  .setup-btn.sm { padding:8px 16px; font-size:13.5px; border-radius:12px; }
+  .setup-vol { display:flex; align-items:center; gap:10px; }
+  .setup-vol input { width:180px; }
+  .setup-vol span { font-size:12.5px; color:#8A93A1; direction:ltr; }
+
 </style>
+<script>/* placeholders قبل تحميل الواجهة: جافا تنادي هذه الدوال من أول ثانية */
+  window.setCarState=function(){}; window.setSpeed=function(){}; window.setTheme=function(){};
+  window.setHeadingTest=function(){}; window.testAdhan=function(){}; window.testIqama=function(){};
+  </script>
 </head>
 <body>
 <div id="stage">
@@ -680,6 +721,11 @@
 
 <script>
   var LAT = 27.5236, LON = 41.6925;   // حائل
+  try {
+    var _clat = parseFloat(localStorage.getItem('city_lat'));
+    var _clon = parseFloat(localStorage.getItem('city_lon'));
+    if (!isNaN(_clat) && !isNaN(_clon)) { LAT = _clat; LON = _clon; }
+  } catch (e) {}
 
   /* ---------- معاينة على الماك: بديل جسر الـNative لما نفتح الملف في متصفح ---------- */
   var PREVIEW = (typeof Native === 'undefined');
@@ -1830,5 +1876,180 @@
       </div>
     </div>
   </div>
+
+  <!-- ============ لوحة البداية (أول تشغيل) ============ -->
+  <div class="setup-ov" id="setup">
+    <div class="setup-card">
+      <div class="setup-dots"><i class="on"></i><i></i><i></i><i></i></div>
+
+      <div class="setup-step on" data-step="1">
+        <div class="setup-h">وين ساكن؟</div>
+        <div class="setup-sub">نستخدمها للطقس ومواقيت الصلاة</div>
+        <div class="setup-opts">
+          <div class="setup-opt on" id="cityHail" onclick="__st.city('hail')">حائل</div>
+          <div class="setup-opt" id="cityGps" onclick="__st.city('gps')">موقع السيارة (GPS)</div>
+        </div>
+        <div class="setup-search">
+          <input id="cityIn" placeholder="أو اكتب اسم المدينة…">
+          <div class="setup-btn sm" onclick="__st.search()">بحث</div>
+        </div>
+        <div id="cityMsg" style="margin-top:8px;color:#8A93A1;font-size:12.5px"></div>
+      </div>
+
+      <div class="setup-step" data-step="2">
+        <div class="setup-h">الشكل</div>
+        <div class="setup-sub">تقدر تغيّرها لاحقاً من الخيارات</div>
+        <div class="setup-row"><span class="lbl">الوضع</span>
+          <div class="seg" id="segTheme2">
+            <div onclick="__st.theme('auto')" data-v="auto">تلقائي</div>
+            <div onclick="__st.theme('day')" data-v="day">نهاري</div>
+            <div onclick="__st.theme('night')" data-v="night">ليلي</div>
+          </div></div>
+        <div class="setup-row"><span class="lbl">الواجهة</span>
+          <div class="seg" id="segUi2">
+            <div onclick="__st.ui('float')" data-v="float">عائم</div>
+            <div onclick="__st.ui('cards')" data-v="cards">مربعات</div>
+          </div></div>
+        <div class="setup-row"><span class="lbl">الخريطة</span>
+          <div class="seg" id="segMap2">
+            <div onclick="__st.map(0)" data-v="0">كامل الشاشة</div>
+            <div onclick="__st.map(1)" data-v="1">داخل مربع</div>
+          </div></div>
+      </div>
+
+      <div class="setup-step" data-step="3">
+        <div class="setup-h">الصلاة</div>
+        <div class="setup-sub">الأذان والإقامة</div>
+        <div class="setup-row"><span class="lbl">تشغيل الأذان تلقائياً</span>
+          <div class="seg" id="segAdhan2">
+            <div onclick="__st.tog('adhan',true)" data-v="1">نعم</div>
+            <div onclick="__st.tog('adhan',false)" data-v="0">لا</div>
+          </div></div>
+        <div class="setup-row"><span class="lbl">تشغيل الإقامة</span>
+          <div class="seg" id="segIqama2">
+            <div onclick="__st.tog('iqama',true)" data-v="1">نعم</div>
+            <div onclick="__st.tog('iqama',false)" data-v="0">لا</div>
+          </div></div>
+        <div class="setup-row"><span class="lbl">مستوى الصوت</span>
+          <div class="setup-vol"><input type="range" id="stVol" min="0" max="100" value="100"
+               oninput="__st.vol(this.value)"><span id="stVolLbl">100%</span></div></div>
+      </div>
+
+      <div class="setup-step" data-step="4">
+        <div class="setup-h">أشياء تشتغل لحالها</div>
+        <div class="setup-sub">اختيارية بالكامل</div>
+        <div class="setup-row"><span class="lbl">إطفاء البلوتوث عند البدء</span>
+          <div class="seg" id="segBt2">
+            <div onclick="__st.tog('btOff',true)" data-v="1">نعم</div>
+            <div onclick="__st.tog('btOff',false)" data-v="0">لا</div>
+          </div></div>
+        <div class="setup-row"><span class="lbl">فحص التحديثات تلقائياً</span>
+          <div class="seg" id="segUpd2">
+            <div onclick="__st.tog('autoUpd',true)" data-v="1">نعم</div>
+            <div onclick="__st.tog('autoUpd',false)" data-v="0">لا</div>
+          </div></div>
+      </div>
+
+      <div class="setup-foot">
+        <div class="setup-btn ghost" id="stBack" onclick="__st.prev()">السابق</div>
+        <div class="setup-btn" id="stNext" onclick="__st.next()">التالي</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  var ov = document.getElementById('setup');
+  var S = { step: 1, city: 'hail', lat: 27.5236, lon: 41.6925, name: 'حائل', theme: 'auto',
+            ui: 'float', map: 0, adhan: true, iqama: true, vol: 100, btOff: false, autoUpd: true };
+  function $(id) { return document.getElementById(id); }
+  function mark(segId, val) {
+    var el = $(segId); if (!el) return;
+    for (var i = 0; i < el.children.length; i++) {
+      el.children[i].classList.toggle('on', el.children[i].getAttribute('data-v') === String(val));
+    }
+  }
+  function paint() {
+    var steps = ov.querySelectorAll('.setup-step');
+    for (var i = 0; i < steps.length; i++) {
+      steps[i].classList.toggle('on', steps[i].getAttribute('data-step') === String(S.step));
+    }
+    var dots = ov.querySelectorAll('.setup-dots i');
+    for (var j = 0; j < dots.length; j++) dots[j].classList.toggle('on', j === S.step - 1);
+    $('stBack').style.display = S.step === 1 ? 'none' : 'block';
+    $('stNext').textContent = S.step === 4 ? 'ابدأ' : 'التالي';
+    mark('segTheme2', S.theme); mark('segUi2', S.ui); mark('segMap2', S.map);
+    mark('segAdhan2', S.adhan ? 1 : 0); mark('segIqama2', S.iqama ? 1 : 0);
+    mark('segBt2', S.btOff ? 1 : 0); mark('segUpd2', S.autoUpd ? 1 : 0);
+    $('cityHail').classList.toggle('on', S.city === 'hail');
+    $('cityGps').classList.toggle('on', S.city === 'gps');
+  }
+  function finish() {
+    try {
+      localStorage.setItem('onboarded', '1');
+      localStorage.setItem('city_lat', String(S.lat));
+      localStorage.setItem('city_lon', String(S.lon));
+      localStorage.setItem('city_name', S.name);
+    } catch (e) {}
+    LAT = S.lat; LON = S.lon;
+    try { setTheme(S.theme); } catch (e) {}
+    try { setUiStyle(S.ui); } catch (e) {}
+    try { setMapBox(!!S.map); } catch (e) {}
+    try { adhanSoundOn = S.adhan; localStorage.setItem('adhan_sound', S.adhan ? '1' : '0'); } catch (e) {}
+    try { iqamaSoundOn = S.iqama; localStorage.setItem('iqama_sound', S.iqama ? '1' : '0'); } catch (e) {}
+    try { Native.setAdhanVolume(S.vol); } catch (e) {}
+    try { if (S.btOff && Native.btOn()) Native.btToggle(); } catch (e) {}
+    try { Native.setAutoUpdate(!!S.autoUpd); } catch (e) {}
+    try { loadWeather(); } catch (e) {}
+    try { loadPrayer(); } catch (e) {}
+    try { drawMap(); } catch (e) {}
+    ov.classList.remove('on');
+  }
+  window.__st = {
+    city: function (k) {
+      if (k === 'gps') {
+        var p = ''; try { p = Native.pos() || ''; } catch (e) {}
+        var a = p.split(',');
+        if (a.length === 2 && !isNaN(parseFloat(a[0])) && !isNaN(parseFloat(a[1]))) {
+          S.city = 'gps'; S.lat = parseFloat(a[0]); S.lon = parseFloat(a[1]); S.name = 'موقع السيارة';
+          $('cityMsg').textContent = 'تم أخذ موقع السيارة';
+        } else {
+          S.city = 'hail'; S.lat = 27.5236; S.lon = 41.6925; S.name = 'حائل';
+          $('cityMsg').textContent = 'ما فيه إشارة GPS الآن — بنستخدم حائل';
+        }
+      } else {
+        S.city = 'hail'; S.lat = 27.5236; S.lon = 41.6925; S.name = 'حائل';
+        $('cityMsg').textContent = '';
+      }
+      paint();
+    },
+    search: function () {
+      var q = ($('cityIn').value || '').trim();
+      if (!q) { $('cityMsg').textContent = 'اكتب اسم المدينة'; return; }
+      $('cityMsg').textContent = 'جارٍ البحث…';
+      fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=ar&format=json&name=' + encodeURIComponent(q))
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.results || !d.results.length) { $('cityMsg').textContent = 'ما لقيت هذه المدينة'; return; }
+          var r = d.results[0];
+          S.city = 'custom'; S.lat = r.latitude; S.lon = r.longitude; S.name = r.name;
+          $('cityMsg').textContent = 'اخترنا: ' + r.name + (r.country ? ' · ' + r.country : '');
+          paint();
+        })
+        .catch(function () { $('cityMsg').textContent = 'تعذر البحث — تأكد من الإنترنت'; });
+    },
+    theme: function (v) { S.theme = v; paint(); },
+    ui: function (v) { S.ui = v; paint(); },
+    map: function (v) { S.map = +v; paint(); },
+    tog: function (k, v) { S[k] = !!v; paint(); },
+    vol: function (v) { S.vol = parseInt(v, 10) || 0; $('stVolLbl').textContent = S.vol + '%'; },
+    next: function () { if (S.step < 4) { S.step++; paint(); } else finish(); },
+    prev: function () { if (S.step > 1) { S.step--; paint(); } }
+  };
+  var done = false;
+  try { done = localStorage.getItem('onboarded') === '1'; } catch (e) {}
+  if (!done) { paint(); ov.classList.add('on'); }
+})();
+</script>
 </body>
 </html>
