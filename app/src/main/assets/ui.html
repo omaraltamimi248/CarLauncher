@@ -529,6 +529,12 @@
   .pvcell img { display:block; width:100%; height:92px; object-fit:cover; border-radius:9px; }
   .pvcell .lbl { display:block; text-align:center; font-size:12.5px; color:#C9D2DE; margin-top:4px; }
   .pvcell.on .lbl { color:#EAF1FF; }
+  .segbig { display:flex; gap:8px; margin-top:10px; }
+  .segbig > div { flex:1; text-align:center; padding:10px 6px; border-radius:14px; font-size:14.5px;
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); color:#C9D2DE; }
+  .segbig > div.on { background:rgba(76,130,232,.22); border-color:rgba(143,182,255,.45); color:#EAF1FF; }
+  .bigshot { display:block; width:100%; margin-top:10px; border-radius:16px;
+    border:1px solid rgba(255,255,255,.08); }
   .setup-cities { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
   .city { flex:0 0 calc(25% - 6px); box-sizing:border-box; text-align:center; padding:9px 4px; border-radius:12px;
     background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); font-size:14px; color:#C9D2DE; }
@@ -1894,7 +1900,7 @@
   <!-- ============ لوحة البداية (أول تشغيل) ============ -->
   <div class="setup-ov" id="setup">
     <div class="setup-card">
-      <div class="setup-dots"><i class="on"></i><i></i><i></i><i></i></div>
+      <div class="setup-dots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
 
       <div class="setup-step on" data-step="1">
         <div class="setup-h">وين ساكن؟</div>
@@ -1921,31 +1927,26 @@
       </div>
 
       <div class="setup-step" data-step="2">
-        <div class="setup-h">الشكل</div>
-        <div class="setup-sub">اختر بالعين — وتقدر تغيّرها لاحقاً</div>
-        <div class="setup-row"><span class="lbl">الوضع</span>
-          <div class="seg" id="segTheme2">
-            <div onclick="__st.theme('auto')" data-v="auto">تلقائي</div>
-            <div onclick="__st.theme('day')" data-v="day">نهاري</div>
-            <div onclick="__st.theme('night')" data-v="night">ليلي</div>
-          </div></div>
-        <div class="setup-mini-h">الواجهة</div>
-        <div class="pvgrid">
-          <div class="pvcell on" id="pUiFloat" onclick="__st.ui('float')">
-            <img src="pv_ui_float.jpg" alt=""><span class="lbl">عائم</span></div>
-          <div class="pvcell" id="pUiCards" onclick="__st.ui('cards')">
-            <img src="pv_ui_cards.jpg" alt=""><span class="lbl">مربعات</span></div>
+        <div class="setup-h">وضعية الرئيسية</div>
+        <div class="setup-sub">شكل البطاقة اليمنى فوق التطبيقات</div>
+        <div class="segbig">
+          <div class="on" id="pUiFloat" onclick="__st.ui('float')">عائم</div>
+          <div id="pUiCards" onclick="__st.ui('cards')">مربعات</div>
         </div>
-        <div class="setup-mini-h">الخريطة</div>
-        <div class="pvgrid">
-          <div class="pvcell on" id="pMapFull" onclick="__st.map(0)">
-            <img src="pv_map_full.jpg" alt=""><span class="lbl">كامل الشاشة</span></div>
-          <div class="pvcell" id="pMapBox" onclick="__st.map(1)">
-            <img src="pv_map_box.jpg" alt=""><span class="lbl">داخل مربع</span></div>
-        </div>
+        <img class="bigshot" id="shotPark" src="pv_park_float.jpg" alt="">
       </div>
 
       <div class="setup-step" data-step="3">
+        <div class="setup-h">وضعية القيادة</div>
+        <div class="setup-sub">شكل الخريطة لما تتحرك السيارة</div>
+        <div class="segbig">
+          <div class="on" id="pMapFull" onclick="__st.map(0)">كامل الشاشة</div>
+          <div id="pMapBox" onclick="__st.map(1)">داخل مربع</div>
+        </div>
+        <img class="bigshot" id="shotDrive" src="pv_drive_full.jpg" alt="">
+      </div>
+
+      <div class="setup-step" data-step="4">
         <div class="setup-h">الصلاة</div>
         <div class="setup-sub">اختر ماذا يعمل صوت الصلاة</div>
         <div class="setup-row"><span class="lbl">تشغيل الأذان تلقائياً</span>
@@ -1972,7 +1973,7 @@
           </div></div>
       </div>
 
-      <div class="setup-step" data-step="4">
+      <div class="setup-step" data-step="5">
         <div class="setup-h">أشياء تشتغل لحالها</div>
         <div class="setup-sub">اختيارية بالكامل</div>
         <div class="setup-row"><span class="lbl">إطفاء البلوتوث عند البدء</span>
@@ -2014,7 +2015,7 @@
     var dots = ov.querySelectorAll('.setup-dots i');
     for (var j = 0; j < dots.length; j++) dots[j].classList.toggle('on', j === S.step - 1);
     $('stBack').style.display = S.step === 1 ? 'none' : 'block';
-    $('stNext').textContent = S.step === 4 ? 'ابدأ' : 'التالي';
+    $('stNext').textContent = S.step === 5 ? 'ابدأ' : 'التالي';
     mark('segTheme2', S.theme);
     mark('segAdhan2', S.adhan ? 1 : 0); mark('segIqama2', S.iqama ? 1 : 0);
     mark('segBt2', S.btOff ? 1 : 0); mark('segUpd2', S.autoUpd ? 1 : 0);
@@ -2022,6 +2023,8 @@
     $('pUiCards').classList.toggle('on', S.ui === 'cards');
     $('pMapFull').classList.toggle('on', S.map === 0);
     $('pMapBox').classList.toggle('on', S.map === 1);
+    var sp = $('shotPark'); if (sp) sp.src = S.ui === 'cards' ? 'pv_park_cards.jpg' : 'pv_park_float.jpg';
+    var sd = $('shotDrive'); if (sd) sd.src = S.map ? 'pv_drive_box.jpg' : 'pv_drive_full.jpg';
     var chips = ov.querySelectorAll('.city');
     for (var k = 0; k < chips.length; k++) {
       var la = parseFloat(chips[k].getAttribute('data-lat'));
@@ -2093,7 +2096,7 @@
         if (b.getAttribute('data-on') === '1') { b.textContent = 'تجربة'; b.setAttribute('data-on', '0'); }
       }, 5000);
     },
-    next: function () { if (S.step < 4) { S.step++; paint(); } else finish(); },
+    next: function () { if (S.step < 5) { S.step++; paint(); } else finish(); },
     prev: function () { if (S.step > 1) { S.step--; paint(); } }
   };
   var done = false;
