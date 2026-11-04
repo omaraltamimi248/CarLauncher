@@ -548,3 +548,16 @@ APK: md5 `ef878293c10c32320d681d68a1c038a2` — **لم يُثبَّت على ش�
   يعيد `startGps()`. (على السيارة الإذن ممنوح أصلاً بـ`pm install -g`.)
 - `ui.html`: `img._net = !img._local` — بلاطات الشبكة تدخل الكاش؛ تحقق فعلي: ٩٩ بلاطة في `files/tiles/light/16`.
 - md5: d4f64141…09c4.
+
+## تحديث ٤ نوفمبر: تحديث التطبيق من داخل الخيارات (GitHub Releases)
+
+- الإصدار الحالي: `versionCode 3` / `versionName "1.0.2"` — لازم يرتفع الرقمان مع كل إصدار.
+- المصدر: `api.github.com/repos/omaraltamimi248/CarLauncher/releases/latest` → أول ملف ينتهي بـ`.apk`
+  في `assets`. الوسم `v1.0.2` يُقارن رقمياً بـ`versionName` (1.10.2 > 1.9.9).
+- الفحص التلقائي: في `netTick` عند تحوّل `netState` إلى 2 (متصل) — بحد أقصى مرة كل ٦ ساعات
+  (`ui/upd_last` في SharedPreferences). البحث اليدوي من صف «تحديث التطبيق» في الخيارات.
+- التحميل: `getExternalFilesDir()/update.apk` مع تحقق `PackageArchiveInfo.packageName` قبل التثبيت.
+- **التثبيت: `pm install` مباشرة من /sdcard يفشل** (PackageManagerShellCommand.setParamsSize) —
+  الحل المثبت: `cp` إلى `/data/local/tmp/carlauncher-update.apk && pm install -r` عبر `adbLocal` (روت).
+- الواجهة: صف «تحديث التطبيق» + زر يتبدّل بين «تحقق» و«تحديث»، ودالة JS `updState(state,msg)`.
+- md5 (1.0.2): 3e957ca2…d51f.

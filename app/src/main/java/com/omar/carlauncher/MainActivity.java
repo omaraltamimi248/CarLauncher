@@ -132,11 +132,164 @@ public class MainActivity extends Activity {
     private final Runnable netTick = new Runnable() {
         @Override public void run() {
             new Thread(new Runnable() {
-                @Override public void run() { netState = checkNet(); }
+                @Override public void run() {
+                    int prev = netState;
+                    netState = checkNet();
+                    if (netState == 2 && prev != 2) maybeAutoCheckUpdate();
+                }
             }).start();
             handler.postDelayed(this, 60000);
         }
     };
+
+    /* ---------- التحديث من GitHub Releases ---------- */
+    private static final String UPDATE_API =
+            "https://api.github.com/repos/omaraltamimi248/CarLauncher/releases/latest";
+    private static final long UPDATE_INTERVAL_MS = 6L * 3600L * 1000L;
+    private final java.util.concurrent.atomic.AtomicBoolean updateBusy =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    private String appVersionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) { return "0"; }
+    }
+
+    private static int numAt(String[] a, int i) {
+        if (i >= a.length || a[i].isEmpty()) return 0;
+        try { return Integer.parseInt(a[i]); } catch (Exception e) { return 0; }
+    }
+
+    /** يقارن «1.10.2» بـ«1.9.9» رقمياً — يرجع true لو البعيد أحدث */
+    private static boolean newerVersion(String remote, String local) {
+        if (remote == null || local == null) return false;
+        String[] a = remote.replaceAll("[^0-9.]", "").split("\\.");
+        String[] b = local.replaceAll("[^0-9.]", "").split("\\.");
+        int n = Math.max(a.length, b.length);
+        for (int i = 0; i < n; i++) {
+            int x = numAt(a, i), y = numAt(b, i);
+            if (x != y) return x > y;
+        }
+        return false;
+    }
+
+    private void markUpdateChecked() {
+        try { getSharedPreferences("ui", 0).edit().putLong("upd_last", System.currentTimeMillis()).apply(); } catch (Exception ignored) {}
+    }
+
+    private void maybeAutoCheckUpdate() {
+        long last = 0;
+        try { last = getSharedPreferences("ui", 0).getLong("upd_last", 0); } catch (Exception ignored) {}
+        if (System.currentTimeMillis() - last < UPDATE_INTERVAL_MS) return;
+        markUpdateChecked();
+        checkUpdates(false);
+    }
+
+    private void jsUpd(final String state, final String msg) {
+        final String safe = msg == null ? "" : msg.replace("\\", " ").replace("'", " ").replace("\n", " ");
+        runOnUiThread(new Runnable() { public void run() {
+            callJs("updState('" + state + "','" + safe + "')");
+        }});
+    }
+
+    private String httpGet(String url) throws Exception {
+        java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        c.setConnectTimeout(10000); c.setReadTimeout(15000);
+        c.setRequestProperty("Accept", "application/vnd.github+json");
+        c.setRequestProperty("User-Agent", "CarLauncher");
+        java.io.InputStream in = c.getInputStream();
+        java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+        byte[] buf = new byte[8192]; int r;
+        while ((r = in.read(buf)) > 0) bo.write(buf, 0, r);
+        in.close(); c.disconnect();
+        return bo.toString("UTF-8");
+    }
+
+    private void downloadApk(String url, java.io.File out) throws Exception {
+        java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+        c.setConnectTimeout(15000); c.setReadTimeout(20000);
+        c.setRequestProperty("User-Agent", "CarLauncher");
+        int total = c.getContentLength();
+        java.io.InputStream in = c.getInputStream();
+        java.io.FileOutputStream fo = new java.io.FileOutputStream(out);
+        byte[] buf = new byte[16384];
+        int r, done = 0, lastPct = -5;
+        while ((r = in.read(buf)) > 0) {
+            fo.write(buf, 0, r);
+            done += r;
+            if (total > 0) {
+                int pct = (int) (done * 100L / total);
+                if (pct - lastPct >= 5) { lastPct = pct; jsUpd("downloading", "جارٍ التحميل " + pct + "%"); }
+            }
+        }
+        fo.close(); in.close(); c.disconnect();
+    }
+
+    void checkUpdates(final boolean install) {
+        if (!updateBusy.compareAndSet(false, true)) return;
+        jsUpd("checking", "جارٍ التحقق…");
+        new Thread(new Runnable() { public void run() {
+            try {
+                String body = httpGet(UPDATE_API);
+                org.json.JSONObject o = new org.json.JSONObject(body);
+                String tag = o.optString("tag_name", "");
+                String apkUrl = null;
+                org.json.JSONArray assets = o.optJSONArray("assets");
+                if (assets != null) {
+                    for (int i = 0; i < assets.length(); i++) {
+                        org.json.JSONObject a = assets.getJSONObject(i);
+                        if (a.optString("name", "").endsWith(".apk")) {
+                            apkUrl = a.optString("browser_download_url", "");
+                            break;
+                        }
+                    }
+                }
+                String remote = tag.replaceAll("^[vV]", "");
+                android.util.Log.d("CarLauncher", "update: tag=" + tag + " local=" + appVersionName() + " apk=" + apkUrl);
+                if (apkUrl == null || apkUrl.isEmpty()) {
+                    jsUpd("error", "آخر إصدار ما فيه ملف APK");
+                    return;
+                }
+                if (!newerVersion(remote, appVersionName())) {
+                    jsUpd("latest", "أنت على أحدث إصدار " + appVersionName());
+                    return;
+                }
+                jsUpd("available", "يوجد إصدار " + remote);
+                if (!install) {
+                    final String remoteVer = remote;
+                    runOnUiThread(new Runnable() { public void run() { toast("يوجد تحديث " + remoteVer); } });
+                    return;
+                }
+                java.io.File dir = getExternalFilesDir(null);
+                if (dir == null) dir = getCacheDir();
+                java.io.File apk = new java.io.File(dir, "update.apk");
+                if (apk.exists()) apk.delete();
+                downloadApk(apkUrl, apk);
+                android.content.pm.PackageInfo pi =
+                        getPackageManager().getPackageArchiveInfo(apk.getAbsolutePath(), 0);
+                if (pi == null || !getPackageName().equals(pi.packageName)) {
+                    apk.delete();
+                    jsUpd("error", "الملف المنزّل مو تطبيقنا — انحذف");
+                    return;
+                }
+                jsUpd("installing", "جارٍ التثبيت…");
+                // نسخ لـ/data/local/tmp أولاً: pm install ما يقرأ ملفات التطبيق الخاصة من /sdcard
+                String out = adbLocal("cp \"" + apk.getAbsolutePath() + "\" /data/local/tmp/carlauncher-update.apk"
+                        + " && pm install -r /data/local/tmp/carlauncher-update.apk");
+                android.util.Log.d("CarLauncher", "update: downloaded " + apk.length() + " bytes, install=" + out);
+                if (out != null && out.contains("Success")) {
+                    jsUpd("done", "تم التحديث — إعادة تشغيل");
+                    adbLocal("am start -n com.omar.carlauncher/.MainActivity");
+                } else {
+                    jsUpd("error", "التثبيت التلقائي فشل · الملف: " + apk.getAbsolutePath());
+                }
+            } catch (Exception e) {
+                jsUpd("error", "تعذر التحقق: " + e.getMessage());
+            } finally {
+                updateBusy.set(false);
+            }
+        }}).start();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -1064,6 +1217,15 @@ public class MainActivity extends Activity {
                         .format(new java.util.Date(pi.lastUpdateTime));
             } catch (Exception e) { return ""; }
         }
+
+        @JavascriptInterface
+        public String appVersion() { return appVersionName(); }
+
+        @JavascriptInterface
+        public void checkUpdate() { checkUpdates(false); }
+
+        @JavascriptInterface
+        public void installUpdate() { checkUpdates(true); }
 
         @JavascriptInterface
         public void setBrightness(final float v) {

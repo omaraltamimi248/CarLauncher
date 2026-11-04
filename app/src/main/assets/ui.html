@@ -747,11 +747,31 @@
     }
     paintThemeSeg();
     try { paintAdhanSeg(); } catch (e) {}
+    try {
+      var ui = document.getElementById('updInfo');
+      if (ui && !ui.textContent) ui.textContent = Native.appVersion() || '—';
+    } catch (e) {}
     ov.classList.add('on');
   }
   function closeOverlayPanel() { try { Native.closeOverlay(); } catch (e) {} }
   function closeOpts() { var ov = document.getElementById('optsOv'); if (ov) ov.classList.remove('on'); }
   function setBright(v) { try { Native.setBrightness(v); } catch (e) {} }
+  function updCheck() {
+    var i = document.getElementById('updInfo'); if (i) i.textContent = 'جارٍ التحقق…';
+    try { Native.checkUpdate(); } catch (e) {}
+  }
+  function updInstall() {
+    var i = document.getElementById('updInfo'); if (i) i.textContent = 'جارٍ التحميل…';
+    try { Native.installUpdate(); } catch (e) {}
+  }
+  function updState(state, msg) {
+    var i = document.getElementById('updInfo'); if (i) i.textContent = msg || '';
+    var b = document.getElementById('updBtn'); if (!b) return;
+    if (state === 'available') { b.textContent = 'تحديث'; b.onclick = updInstall; }
+    else if (state === 'checking' || state === 'downloading' || state === 'installing') {
+      b.textContent = '...'; b.onclick = null;
+    } else { b.textContent = 'تحقق'; b.onclick = updCheck; }
+  }
   var duckOn = true, adhanSoundOn = true, iqamaSoundOn = true;
   try { adhanSoundOn = localStorage.getItem('adhan_sound') !== '0'; } catch (e) {}
   try { iqamaSoundOn = localStorage.getItem('iqama_sound') !== '0'; } catch (e) {}
@@ -1759,6 +1779,9 @@
         <div class="opt-row"><span>تطبيقات الشبكة</span><div class="opt-btn" onclick="openAppsPicker()">اختيار التطبيقات</div></div>
         <div class="opt-row"><span>شريط الصوتيات</span><div class="seg">
           <div onclick="setMediaBar(true)">إظهار</div><div onclick="setMediaBar(false)">إخفاء</div></div></div>
+        <div class="opt-row"><span>تحديث التطبيق</span><div class="grow"></div>
+          <div class="opt-info" id="updInfo" style="margin-left:auto;padding-left:10px">—</div>
+          <div class="opt-btn" id="updBtn" style="margin-left:8px" onclick="updCheck()">تحقق</div></div>
         <div class="opt-row"><span>الجهاز</span><div class="opt-info" id="optInfo">—</div></div>
         <div class="opt-row"><span>إعادة تشغيل اللانشر</span><div class="opt-btn" onclick="restartApp()">إعادة التشغيل</div></div>
       </div>
