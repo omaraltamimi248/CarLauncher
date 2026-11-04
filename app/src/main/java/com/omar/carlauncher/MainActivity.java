@@ -226,6 +226,60 @@ public class MainActivity extends Activity {
         fo.close(); in.close(); c.disconnect();
     }
 
+    /** ينسخ الـAPK المثبّت حالياً إلى files/prev.apk قبل أي تحديث (للرجوع) */
+    private boolean backupCurrentApk() {
+        try {
+            String src = getPackageManager().getApplicationInfo(getPackageName(), 0).sourceDir;
+            java.io.File out = new java.io.File(getFilesDir(), "prev.apk");
+            java.io.FileInputStream in = new java.io.FileInputStream(src);
+            java.io.FileOutputStream fo = new java.io.FileOutputStream(out);
+            byte[] b = new byte[16384]; int r;
+            while ((r = in.read(b)) > 0) fo.write(b, 0, r);
+            fo.close(); in.close();
+            if (out.length() < 10000) { out.delete(); return false; }
+            getSharedPreferences("ui", 0).edit()
+                    .putString("prev_ver", appVersionName())
+                    .putString("prev_path", out.getAbsolutePath())
+                    .apply();
+            android.util.Log.d("CarLauncher", "update: backup " + appVersionName() + " -> " + out.length() + " bytes");
+            return true;
+        } catch (Exception e) {
+            android.util.Log.d("CarLauncher", "update: backup failed " + e);
+            return false;
+        }
+    }
+
+    private String prevVersion() {
+        boolean ex = new java.io.File(getFilesDir(), "prev.apk").exists();
+        String v = "";
+        try { v = getSharedPreferences("ui", 0).getString("prev_ver", ""); } catch (Exception e) {}
+        android.util.Log.d("CarLauncher", "prevVersion: file=" + ex + " ver=" + v);
+        return ex ? v : "";
+    }
+
+    /** يرجع للنسخة المحفوظة (pm install -d يسمح بتنزيل versionCode) */
+    void rollback() {
+        if (!updateBusy.compareAndSet(false, true)) return;
+        jsUpd("installing", "جارٍ الرجوع…");
+        new Thread(new Runnable() { public void run() {
+            try {
+                java.io.File prev = new java.io.File(getFilesDir(), "prev.apk");
+                if (!prev.exists()) { jsUpd("error", "ما فيه نسخة سابقة محفوظة"); return; }
+                String out = adbLocal("cp \"" + prev.getAbsolutePath() + "\" /data/local/tmp/carlauncher-prev.apk"
+                        + " && pm install -d -r /data/local/tmp/carlauncher-prev.apk");
+                android.util.Log.d("CarLauncher", "rollback: " + out);
+                if (out != null && out.contains("Success")) {
+                    jsUpd("done", "تم الرجوع — إعادة تشغيل");
+                    adbLocal("am start -n com.omar.carlauncher/.MainActivity");
+                } else {
+                    jsUpd("error", "تعذر الرجوع (يحتاج روت)");
+                }
+            } catch (Exception e) {
+                jsUpd("error", "تعذر الرجوع: " + e.getMessage());
+            } finally { updateBusy.set(false); }
+        }}).start();
+    }
+
     void checkUpdates(final boolean install) {
         if (!updateBusy.compareAndSet(false, true)) return;
         android.util.Log.d("CarLauncher", "update: check start install=" + install);
@@ -275,7 +329,8 @@ public class MainActivity extends Activity {
                     jsUpd("error", "الملف المنزّل مو تطبيقنا — انحذف");
                     return;
                 }
-                jsUpd("installing", "جارٍ التثبيت…");
+                jsUpd("installing", "حفظ نسخة احتياطية…");
+                backupCurrentApk();
                 // نسخ لـ/data/local/tmp أولاً: pm install ما يقرأ ملفات التطبيق الخاصة من /sdcard
                 String out = adbLocal("cp \"" + apk.getAbsolutePath() + "\" /data/local/tmp/carlauncher-update.apk"
                         + " && pm install -r /data/local/tmp/carlauncher-update.apk");
@@ -1230,6 +1285,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void installUpdate() { checkUpdates(true); }
+
+        @JavascriptInterface
+        public String prevVersion() { return MainActivity.this.prevVersion(); }
+
+        @JavascriptInterface
+        public void rollback() { MainActivity.this.rollback(); }
 
         @JavascriptInterface
         public void setBrightness(final float v) {

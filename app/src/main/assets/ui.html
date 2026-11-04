@@ -750,6 +750,10 @@
     try {
       var ui = document.getElementById('updInfo');
       if (ui) ui.textContent = Native.appVersion() || '—';
+      var pv = document.getElementById('prevInfo'), pvv = Native.prevVersion() || '';
+      if (pv) pv.textContent = pvv ? ('النسخة ' + pvv) : 'مافيه نسخة';
+      var pb = document.getElementById('prevBtn');
+      if (pb) pb.style.opacity = pvv ? '1' : '.4';
     } catch (e) {}
     ov.classList.add('on');
   }
@@ -771,6 +775,10 @@
     else if (state === 'checking' || state === 'downloading' || state === 'installing') {
       b.textContent = '...'; b.onclick = null;
     } else { b.textContent = 'تحقق'; b.onclick = updCheck; }
+  }
+  function doRollback() {
+    var i = document.getElementById('prevInfo'); if (i) i.textContent = 'جارٍ الرجوع…';
+    try { Native.rollback(); } catch (e) {}
   }
   var duckOn = true, adhanSoundOn = true, iqamaSoundOn = true;
   try { adhanSoundOn = localStorage.getItem('adhan_sound') !== '0'; } catch (e) {}
@@ -1782,6 +1790,9 @@
         <div class="opt-row"><span>تحديث التطبيق</span><div class="grow"></div>
           <div class="opt-info" id="updInfo" style="margin-left:auto;padding-left:10px">—</div>
           <div class="opt-btn" id="updBtn" style="margin-left:8px" onclick="updCheck()">تحقق</div></div>
+        <div class="opt-row"><span>الرجوع للنسخة السابقة</span><div class="grow"></div>
+          <div class="opt-info" id="prevInfo" style="margin-left:auto;padding-left:10px">—</div>
+          <div class="opt-btn" id="prevBtn" style="margin-left:8px" onclick="doRollback()">رجوع</div></div>
         <div class="opt-row"><span>الجهاز</span><div class="opt-info" id="optInfo">—</div></div>
         <div class="opt-row"><span>إعادة تشغيل اللانشر</span><div class="opt-btn" onclick="restartApp()">إعادة التشغيل</div></div>
       </div>
