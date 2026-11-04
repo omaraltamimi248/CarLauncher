@@ -1,0 +1,27 @@
+# Build output
+build/
+app/build/
+.gradle/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Local config
+local.properties
+*.jks
+*.keystore
+.env
+.env.*
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store
+
+# Screenshots stay out of the repo (16 MB of PNGs); curated shots go to docs/ later
+screens/
+
+# Logs
+*.log

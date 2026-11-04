@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#08090B; }
+  body { color:#F2F3F5; font-family:"SF Arabic","Noto Naskh Arabic","Droid Arabic Naskh","Geeza Pro",sans-serif;
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:rgba(0,0,0,0); }
+  #stage { position:absolute; top:0; left:0; width:1024px; height:600px; transform-origin:top left; overflow:hidden; }
+
+  .state { position:absolute; top:0;left:0;right:0;bottom:0; opacity:0; pointer-events:none; transition:opacity .45s ease; }
+  .state.on { opacity:1; pointer-events:auto; }
+
+  .status { position:absolute; top:18px; left:30px; right:30px; display:flex; justify-content:space-between; align-items:center; font-size:14.5px; color:#8A9099; z-index:30; }
+  .status .side { display:flex; align-items:center; }
+  .status .side > * + * { margin-right:15px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#4ADE80; box-shadow:0 0 10px rgba(74,222,128,.75); transition:background .3s, box-shadow .3s; }
+  .dot.warn { background:#F5B942; box-shadow:0 0 10px rgba(245,185,66,.7); }
+  .dot.offline { background:#EF4444; box-shadow:0 0 10px rgba(239,68,68,.7); }
+  .badge { padding:5px 13px; border-radius:99px; background:rgba(255,255,255,.07); font-size:13px; color:#C9CED6; }
+  .strong { color:#F2F3F5; }
+  .drive-tag { color:#8FB6FF; }
+
+  /* ---------- PARK ---------- */
+  .park-frame { position:absolute; top:0; left:0; width:1024px; height:600px; padding:58px 30px 84px; display:flex; z-index:1; }
+  .clockcard { width:322px; border-radius:30px; padding:26px;
+    background:linear-gradient(160deg,#16181D 0%,#101216 100%);
+    display:flex; flex-direction:column;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 20px 50px rgba(0,0,0,.5); }
+  .time { font-size:86px; font-weight:250; line-height:.9; letter-spacing:-3px; font-variant-numeric:tabular-nums; direction:ltr; text-align:right; }
+  .time span { font-size:28px; font-weight:300; color:#8A9099; letter-spacing:0; }
+  .date { font-size:18px; color:#9AA0AA; margin-top:8px; font-weight:300; }
+  .wx { display:flex; align-items:baseline; margin-top:12px; }
+  .wx > * + * { margin-right:11px; }
+  .wx .deg { font-size:48px; font-weight:250; letter-spacing:-2px; direction:ltr; }
+  .wx .loc { font-size:14px; color:#8A9099; }
+  .wx .wxi { width:76px; height:76px; display:flex; align-items:center; justify-content:center; align-self:center; margin-right:2px; }
+  .wx .wxi svg { width:74px; height:74px; display:block; }
+  .prayerbox { margin-top:14px; border-radius:20px; background:rgba(255,255,255,.045); padding:13px 16px 12px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04); }
+  .pb-top { display:flex; align-items:center; font-size:13px; color:#8A9099; }
+  .pb-top > * + * { margin-right:9px; }
+  .pb-time { margin-top:6px; font-size:28px; font-weight:300; color:#E7EAEF; font-variant-numeric:tabular-nums; display:flex; align-items:baseline; }
+  .pb-time .cd { direction:ltr; unicode-bidi:isolate; letter-spacing:-.5px; }
+  .pb-time .pb-lbl { font-size:13.5px; color:#7C828C; margin-left:10px; }
+  .moon { width:15px; height:15px; border-radius:50%; box-shadow:inset -4px 0 0 0 #8A9099; transform:rotate(-20deg); flex:0 0 auto; }
+  .pbar { margin-top:9px; height:5px; border-radius:4px; background:rgba(255,255,255,.09); overflow:hidden; }
+  .pbar i { display:block; height:100%; width:0%; border-radius:4px;
+    background:linear-gradient(90deg,#5B9BFF,#9FC2FF); transition:width .6s linear; }
+  .day .pbar { background:rgba(16,24,40,.09); }
+  .day .pbar i { background:linear-gradient(90deg,#2C62C9,#6E9DF0); }
+
+  .btnrow { display:flex; align-items:center; margin-top:auto; }
+  .drivebtn { flex:1; height:50px; border-radius:17px; display:flex; align-items:center; justify-content:center;
+    font-size:16px; color:#DCE7FF; background:rgba(76,130,232,.20); border:1px solid rgba(143,182,255,.30); }
+  .btbtn { width:50px; height:50px; margin-right:12px; border-radius:17px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.08); }
+  .btbtn svg { width:24px; height:24px; stroke:#9AA0AA; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  .btbtn.on { background:rgba(76,130,232,.24); border-color:rgba(143,182,255,.45); }
+  .btbtn.on svg { stroke:#9FC2FF; }
+
+  /* ---------- أيقونات موحّدة ---------- */
+  .pager { flex:1; margin-right:20px; position:relative; overflow:hidden; }
+  .pages { display:flex; width:300%; height:100%; transition:transform .3s ease; }
+  .page { width:33.3333%; height:100%; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(2,1fr); grid-gap:16px; }
+  .tile { border-radius:26px; background:linear-gradient(155deg,#191C21 0%,#121418 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 10px 26px rgba(0,0,0,.32);
+    transition:transform .12s ease, background .12s ease; }
+  .tile:active { transform:scale(.97); background:linear-gradient(155deg,#22262D 0%,#16191E 100%); }
+  .tile .lbl { font-size:15.5px; color:#B9BFC8; margin-top:13px; max-width:100%; text-align:center;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 8px; }
+  .tile svg { width:42px; height:42px; stroke:#DDE2E9; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+  .tile .appico { width:60px; height:60px; border-radius:18px; display:block; object-fit:contain;
+    padding:9px; background:linear-gradient(155deg,#252C36 0%,#161B22 100%);
+    border:1px solid rgba(255,255,255,.07); box-shadow:0 4px 12px rgba(0,0,0,.25); }
+  .tile.hi { background:linear-gradient(155deg,#20304F 0%,#151B26 100%); }
+  .tile.hi svg { stroke:#8FB6FF; } .tile.hi .lbl { color:#DCE7FF; }
+  .dots { position:absolute; bottom:6px; left:0; right:0; display:flex; justify-content:center; direction:ltr; }
+  .dots i { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,.22); margin:0 4px; display:block; }
+  .dots i.on { background:#8FB6FF; }
+
+  .media { position:absolute; left:30px; right:30px; bottom:18px; height:60px; border-radius:22px;
+    background:linear-gradient(90deg,rgba(24,27,32,.95),rgba(18,20,24,.95));
+    display:flex; align-items:center; padding:0 20px; box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
+  .media > * + * { margin-right:15px; }
+  .art { width:36px; height:36px; border-radius:11px; background:linear-gradient(140deg,#3B6FE0,#7C4DE0); flex:0 0 auto; }
+  .m1 { font-size:14.5px; color:#E7EAEF; } .m2 { font-size:12px; color:#7C828C; margin-top:2px; }
+  .media { justify-content:center; }
+  .mctl { display:flex; align-items:center; }
+  .mbtn { width:56px; height:42px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.055); margin:0 7px; }
+  .mbtn svg { width:22px; height:22px; stroke:#DDE2E9; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  .mbtn.play { width:72px; background:rgba(76,130,232,.22); border:1px solid rgba(143,182,255,.30); }
+  .mbtn.play svg { stroke:#DCE7FF; fill:#DCE7FF; }
+  .day .mbtn { background:rgba(16,24,40,.05); border:1px solid rgba(16,24,40,.07); }
+  .day .mbtn svg { stroke:#5B6472; }
+  .day .mbtn.play { background:rgba(44,98,201,.12); border-color:rgba(44,98,201,.26); }
+  .day .mbtn.play svg { stroke:#1E4EA8; fill:#1E4EA8; }
+
+
+  /* ---------- خريطة بكامل الشاشة (وضع القيادة) ---------- */
+  #drive .map { position:absolute; top:0; left:0; width:1024px; height:600px; border-radius:0;
+    box-shadow:none; z-index:0; }
+  #drive .mapfade { background:linear-gradient(180deg, rgba(8,9,11,.30) 0%, rgba(8,9,11,0) 22%, rgba(8,9,11,0) 72%, rgba(8,9,11,.35) 100%); }
+  #drive .scrim-t { position:absolute; top:0; left:0; right:0; height:110px; z-index:1; pointer-events:none;
+    background:linear-gradient(to bottom, rgba(6,7,9,.72) 0%, rgba(6,7,9,.28) 55%, rgba(6,7,9,0) 100%); }
+  #drive .scrim-r { position:absolute; top:0; right:0; bottom:0; width:480px; z-index:1; pointer-events:none;
+    background:linear-gradient(to left, rgba(6,7,9,.985) 0%, rgba(6,7,9,.95) 46%, rgba(6,7,9,.70) 78%, rgba(6,7,9,0) 100%); }
+  #drive .scrim-l { position:absolute; left:0; bottom:0; width:740px; height:150px; z-index:1; pointer-events:none;
+    background:linear-gradient(to top, rgba(6,7,9,.90) 0%, rgba(6,7,9,.55) 45%, rgba(6,7,9,0) 100%); }
+  #drive .left { justify-content:flex-end; }
+  #drive .media-mini { background:rgba(15,18,23,.60); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border:1px solid rgba(255,255,255,.06); }
+  #drive .tiles { filter:brightness(1.16) contrast(1.02); }
+  #drive .compass { top:70px; left:30px; }
+  #drive .maptilt { top:70px; left:82px; right:auto; }
+  #drive .mapbtn { left:30px; bottom:106px; margin-left:0; }
+  #drive .speedpill { right:auto; left:196px; bottom:106px; }
+  #drive .attrib { right:auto; left:16px; bottom:5px; color:rgba(214,224,238,.42); }
+  #drive .nogps { top:70px; left:50%; margin-left:-92px; }
+  .day #drive .media-mini { background:rgba(255,255,255,.74); }
+  .day #drive .scrim-t { background:linear-gradient(to bottom, rgba(236,240,246,.92) 0%, rgba(236,240,246,.4) 55%, rgba(236,240,246,0) 100%); }
+  .day #drive .scrim-r { background:linear-gradient(to left, rgba(236,240,246,.97) 0%, rgba(236,240,246,.93) 44%, rgba(236,240,246,.62) 76%, rgba(236,240,246,0) 100%); }
+  .day #drive .scrim-l { background:linear-gradient(to top, rgba(236,240,246,.95) 0%, rgba(236,240,246,.65) 40%, rgba(236,240,246,0) 100%); }
+  .day #drive .mapfade { background:linear-gradient(180deg, rgba(236,240,246,.35) 0%, rgba(236,240,246,0) 22%, rgba(236,240,246,0) 70%, rgba(236,240,246,.5) 100%); }
+
+  /* ---------- DRIVE ---------- */
+  .drive { position:absolute; top:0; left:0; width:1024px; height:600px; padding:58px 34px 24px; display:flex; z-index:1; }
+  .drive > .left { order:2; margin-right:24px; }
+  .drive > .right-col { order:1; }
+  .left { flex:1; display:flex; flex-direction:column; margin-left:24px; }
+  .map { position:relative; flex:1; border-radius:28px; overflow:hidden; background:#0B0E13;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 16px 40px rgba(0,0,0,.4); }
+  .rot { position:absolute; top:0; left:0; width:100%; height:100%; transition:transform .45s linear; will-change:transform;
+    transform-origin:50% 50%; }
+  .tiles { position:absolute; top:0; left:0; width:100%; height:100%; background:#0B0E13; }
+  .mtile { position:absolute; width:256px; height:256px; display:block; }
+  .car { position:absolute; left:50%; top:50%; width:1px; height:1px; transition:transform .45s linear; }
+  .car svg { position:absolute; left:-17px; top:-17px; width:34px; height:34px; }
+  .mapfade { position:absolute; top:0;left:0;right:0;bottom:0; z-index:1;
+    background:linear-gradient(180deg, rgba(8,9,11,.32) 0%, rgba(8,9,11,0) 26%, rgba(8,9,11,0) 68%, rgba(8,9,11,.66) 100%); }
+  .mapbtn { position:absolute; bottom:14px; left:50%; margin-left:-74px; width:148px; height:44px; z-index:900;
+    display:flex; align-items:center; justify-content:center; border-radius:22px;
+    background:rgba(16,20,27,.84); border:1px solid rgba(143,182,255,.28); font-size:16px; color:#DCE7FF; }
+  .mapbtn svg { width:20px; height:20px; margin-left:8px; stroke:#9FC2FF; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .attrib { position:absolute; bottom:7px; right:12px; z-index:900; font-size:10.5px; color:rgba(214,224,238,.58); }
+  .nogps { position:absolute; top:14px; left:50%; margin-left:-92px; width:184px; height:40px; border-radius:14px; z-index:800;
+    display:flex; align-items:center; justify-content:center; font-size:12.5px; color:#C9CED6;
+    background:rgba(14,18,24,.78); border:1px solid rgba(255,255,255,.12); }
+  .day .nogps { background:rgba(255,255,255,.92); color:#5E6878; border-color:rgba(20,30,48,.12); }
+  .compass { position:absolute; top:12px; left:12px; width:42px; height:42px; border-radius:50%;
+    background:rgba(14,18,24,.82); border:1px solid rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center; z-index:6; }
+  .compass svg { width:22px; height:22px; stroke:#C9CED6; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+  .compass.up { background:rgba(76,130,232,.30); border-color:rgba(143,182,255,.5); }
+  .compass.up svg { stroke:#DCE7FF; }
+  .maptilt { position:absolute; top:12px; right:12px; width:46px; height:46px; border-radius:15px; z-index:7;
+    background:rgba(14,18,24,.82); border:1px solid rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:500; color:#C9CED6; letter-spacing:.5px; }
+  .maptilt.flat { background:rgba(76,130,232,.30); border-color:rgba(143,182,255,.5); color:#DCE7FF; }
+  .day .maptilt { background:rgba(255,255,255,.9); border-color:rgba(20,30,48,.12); color:#3C4656; }
+  .day .maptilt.flat { background:rgba(44,98,201,.16); border-color:rgba(44,98,201,.35); color:#1E4EA8; }
+  .btmap { position:absolute; top:12px; right:12px; width:44px; height:44px; border-radius:50%;
+    background:rgba(14,18,24,.82); border:1px solid rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center; z-index:6; }
+  .btmap svg { width:21px; height:21px; stroke:#9AA0AA; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  .btmap.on { background:rgba(76,130,232,.30); border-color:rgba(143,182,255,.5); }
+  .btmap.on svg { stroke:#DCE7FF; }
+  .media-mini { margin-top:14px; display:flex; align-items:center; background:rgba(23,26,31,.85); border-radius:20px; padding:12px 18px; }
+  .media-mini { justify-content:center; }
+  .mbtn.sm { width:46px; height:36px; margin:0 5px; border-radius:12px; }
+  .mbtn.sm.play { width:58px; }
+  .mbtn.sm svg { width:19px; height:19px; }
+  .media-mini > * + * { margin-right:14px; }
+
+  .right-col { width:330px; display:flex; flex-direction:column; }
+  .speedcard { flex:1; border-radius:32px; background:linear-gradient(155deg,#171A20,#0F1114); padding:22px 26px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05); display:flex; flex-direction:column; justify-content:space-between; }
+  .sc-top { display:flex; align-items:center; justify-content:space-between; }
+  .sc-lbl { font-size:14px; color:#8A9099; }
+  .limit { width:66px; height:66px; border-radius:50%; border:3.5px solid #E5484D; display:flex;
+    align-items:center; justify-content:center; font-size:25px; font-weight:600; color:#FF6B6B; direction:ltr; }
+  .sc-mid { display:flex; align-items:flex-end; }
+  .sc-mid > * + * { margin-right:12px; }
+  .speed { font-size:118px; font-weight:250; line-height:.82; letter-spacing:-6px; font-variant-numeric:tabular-nums; direction:ltr; }
+  .unit { font-size:17px; color:#8A9099; padding-bottom:14px; }
+  .sc-bot { font-size:12.5px; color:#636A74; }
+  .statrow { display:flex; margin-top:16px; }
+  .stat { flex:1; margin-left:14px; border-radius:22px; background:linear-gradient(155deg,#16181D,#101216); padding:16px 18px; box-shadow:inset 0 1px 0 rgba(255,255,255,.04); }
+  .stat .k { font-size:12.5px; color:#7C828C; } .stat .v { font-size:22px; margin-top:6px; font-weight:400; direction:ltr; text-align:right; }
+  .stat.nav { background:linear-gradient(155deg,#20304F 0%,#151B26 100%); }
+  .stat.nav .v { font-size:17px; color:#DCE7FF; direction:rtl; text-align:right; }
+  .hbtns { display:flex; justify-content:flex-start; }
+  .hbtns.in { margin-top:14px; }
+  .hbtns.in .btbtn { width:66px; height:66px; border-radius:21px; margin-right:22px; }
+  .hbtns.in .btbtn svg { width:32px; height:32px; }
+
+  /* ---------- إشعار الأذان ---------- */
+  .adhan-ov { position:absolute; top:0; left:0; width:1024px; height:600px; z-index:9000;
+    background:rgba(4,6,9,.55); display:none; align-items:center; justify-content:center; }
+  .adhan-ov.on { display:flex; }
+  .adhan-card { width:440px; padding:36px 34px 30px; border-radius:32px; text-align:center;
+    background:linear-gradient(160deg,#191C22 0%,#0E1014 100%);
+    border:1px solid rgba(255,255,255,.075);
+    box-shadow:0 30px 70px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.05); }
+  .ad-top { font-size:17px; color:#8A9099; }
+  .ad-name { font-size:40px; font-weight:300; margin-top:6px; color:#E7EAEF; }
+  .ad-time { display:flex; direction:ltr; justify-content:center; align-items:flex-start; margin-top:10px; }
+  .ad-time .n { font-size:56px; font-weight:250; letter-spacing:-1px; font-variant-numeric:tabular-nums; color:#E7EAEF; }
+  .ad-time .s { font-size:17px; color:#9AA0AA; margin-left:7px; margin-top:13px; }
+  .ad-sub { font-size:14px; color:#8A9099; margin-top:14px; }
+  .ad-cd { direction:ltr; color:#C9D1DC; font-variant-numeric:tabular-nums; }
+  .ad-bar { margin-top:18px; height:4px; border-radius:3px; background:rgba(255,255,255,.09); overflow:hidden; }
+  .ad-bar i { display:block; height:100%; width:0%; border-radius:3px; background:linear-gradient(90deg,#5B9BFF,#9FC2FF); }
+  .day .adhan-card { background:linear-gradient(160deg,#FFFFFF,#EFF3F8); border-color:rgba(20,30,48,.10);
+    box-shadow:0 30px 70px rgba(18,28,44,.18); }
+  .day .ad-name, .day .ad-time .n { color:#101418; }
+  .day .ad-top, .day .ad-sub, .day .ad-time .s { color:#68727F; }
+  .day .ad-cd { color:#243043; }
+  .day .ad-bar { background:rgba(16,24,40,.10); }
+  .day .ad-bar i { background:linear-gradient(90deg,#2C62C9,#6E9DF0); }
+  .sc-foot { display:flex; flex-direction:column; }
+  .stat .timev { display:flex; align-items:center; font-size:24px; line-height:1; margin-top:8px; }
+
+  /* ---------- الثيم ---------- */
+  .bgwash { position:absolute; top:0; left:0; right:0; bottom:0; }
+  .bgwash-park { background:radial-gradient(900px 420px at 78% -10%, rgba(90,140,255,.18), transparent 65%), radial-gradient(700px 380px at 10% 110%, rgba(255,150,80,.09), transparent 65%); }
+  .bgwash-drive { background:radial-gradient(760px 400px at 20% -20%, rgba(60,110,220,.16), transparent 65%); }
+
+  html.day, html.day body { background:#EEF1F5; color:#14181E; }
+  .day .bgwash-park { background:radial-gradient(900px 420px at 78% -10%, rgba(90,140,255,.10), transparent 65%), radial-gradient(700px 380px at 10% 110%, rgba(255,150,80,.07), transparent 65%); }
+  .day .bgwash-drive { background:radial-gradient(760px 400px at 20% -20%, rgba(60,110,220,.08), transparent 65%); }
+  .day .status { color:#5B6472; }
+  .day .strong { color:#14181E; }
+  .day .drive-tag { color:#1E4EA8; background:rgba(44,98,201,.10); }
+  .day .badge { background:rgba(16,24,40,.06); color:#3C4656; }
+  .day .dot { background:#16A34A; box-shadow:0 0 9px rgba(22,163,74,.45); }
+  .day .dot.warn { background:#D97706; box-shadow:0 0 9px rgba(217,119,6,.4); }
+  .day .dot.offline { background:#DC2626; box-shadow:0 0 9px rgba(220,38,38,.4); }
+  .day .clockcard { background:linear-gradient(160deg,#FFFFFF 0%,#E9EEF5 100%); box-shadow:0 12px 30px rgba(18,28,44,.10); }
+  .day .time { color:#101418; }
+  .day .time span { color:#7A8494; }
+  .day .date { color:#5E6878; }
+  .day .wx .loc { color:#5E6878; }
+  .day .prayerbox { background:rgba(16,24,40,.045); box-shadow:none; }
+  .day .pb-top { color:#5E6878; }
+  .day .pb-time { color:#101418; }
+  .day .pb-time .pb-lbl { color:#6B7686; }
+  .day .moon { box-shadow:inset -4px 0 0 0 #8A93A0; }
+  .day .tile { background:linear-gradient(155deg,#FFFFFF 0%,#F1F4F8 100%); box-shadow:0 8px 20px rgba(18,28,44,.08), inset 0 1px 0 rgba(255,255,255,.9); }
+  .day .tile .lbl { color:#39424F; }
+  .day .tile .appico { background:linear-gradient(155deg,#FFFFFF 0%,#EDF1F7 100%); border-color:rgba(20,30,48,.08); }
+  .day .tile svg { stroke:#2B3440; }
+  .day .tile.hi { background:linear-gradient(155deg,#E4EDFF 0%,#F5F9FF 100%); }
+  .day .tile.hi svg { stroke:#2C62C9; }
+  .day .tile.hi .lbl { color:#1E4EA8; }
+  .day .media { background:linear-gradient(90deg,rgba(255,255,255,.98),rgba(244,247,251,.98)); box-shadow:0 8px 22px rgba(18,28,44,.08), inset 0 1px 0 #FFFFFF; }
+  .day .m1 { color:#1A2028; }
+  .day .m2 { color:#6B7686; }
+  .day .drivebtn { background:rgba(44,98,201,.10); border-color:rgba(44,98,201,.28); color:#1E4EA8; }
+  .day .btbtn { background:rgba(16,24,40,.05); border-color:rgba(16,24,40,.08); }
+  .day .btbtn svg { stroke:#5B6472; }
+  .day .btbtn.on { background:rgba(44,98,201,.16); border-color:rgba(44,98,201,.3); }
+  .day .btbtn.on svg { stroke:#1E4EA8; }
+  .day .map { background:#E8ECF2; box-shadow:0 12px 28px rgba(18,28,44,.10); }
+  .day .tiles { background:#E8ECF2; }
+  .day .mapfade { background:linear-gradient(180deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 26%, rgba(255,255,255,0) 68%, rgba(255,255,255,.55) 100%); }
+  .day .mapbtn { background:rgba(255,255,255,.92); border-color:rgba(44,98,201,.25); color:#1E4EA8; }
+  .day .mapbtn svg { stroke:#2C62C9; }
+  .day .attrib { color:rgba(30,40,55,.5); }
+  .day .compass { background:rgba(255,255,255,.9); border-color:rgba(20,30,48,.12); }
+  .day .compass svg { stroke:#3C4656; }
+  .day .compass.up { background:rgba(44,98,201,.16); border-color:rgba(44,98,201,.35); }
+  .day .btmap { background:rgba(255,255,255,.9); border-color:rgba(20,30,48,.12); }
+  .day .btmap svg { stroke:#5B6472; }
+  .day .btmap.on { background:rgba(44,98,201,.16); border-color:rgba(44,98,201,.3); }
+  .day .btmap.on svg { stroke:#1E4EA8; }
+  .day .media-mini { background:rgba(255,255,255,.90); }
+  .day .speedcard { background:linear-gradient(155deg,#FFFFFF,#EDF2F8); box-shadow:0 12px 28px rgba(18,28,44,.10), inset 0 1px 0 #FFFFFF; }
+  .day .sc-lbl, .day .unit, .day .sc-bot { color:#68727F; }
+  .day .speed { color:#101418; }
+  .day .stat { background:linear-gradient(155deg,#FFFFFF,#F2F5F9); box-shadow:0 6px 16px rgba(18,28,44,.07); }
+  .day .stat .k { color:#68727F; }
+  .day .stat .v { color:#14181E; }
+  .day .stat.nav { background:linear-gradient(155deg,#E4EDFF,#F5F9FF); }
+  .day .stat.nav .v { color:#1E4EA8; }
+  .day .nogps { color:#5E6878; }
+  .day .dots i { background:rgba(20,30,48,.18); }
+  .day .dots i.on { background:#1E4EA8; }
+
+  /* ---------- البطاقة الجانبية الموحّدة (وقوف + قيادة) ---------- */
+  .row { display:flex; align-items:center; }
+  .grow { flex:1; }
+  .park-frame { padding:58px 30px 84px; }
+  .media { right:auto; width:622px; }
+  #sideHostPark { height:518px; align-self:flex-start; }
+  .clockcard { width:330px; flex:0 0 330px; padding:0; background:none; box-shadow:none; border-radius:0; }
+  .day .clockcard { background:none; box-shadow:none; }
+  #sidepanel { position:relative; width:100%; height:100%; display:flex; flex-direction:column; }
+  .spclose { display:none; position:absolute; top:8px; left:8px; width:32px; height:32px; border-radius:10px; z-index:20;
+    align-items:center; justify-content:center; font-size:14px; color:#C9CED6;
+    background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); }
+  .sp-card { border-radius:0; background:transparent; border:0; box-shadow:none; }
+  .day .sp-card { background:transparent; border:0; box-shadow:none; }
+  /* ---- نمط المربعات (يُختار من الخيارات) ---- */
+  body.style-cards .sp-card { border-radius:26px; background:linear-gradient(155deg,#16181D,#101216);
+    border:1px solid rgba(255,255,255,.05); box-shadow:0 16px 40px rgba(0,0,0,.35); }
+  body.style-cards.day .sp-card { background:linear-gradient(155deg,#FFFFFF,#EDF1F7);
+    border-color:rgba(20,30,48,.07); box-shadow:0 12px 28px rgba(18,28,44,.10); }
+  body.style-cards .sp-time { padding:18px 20px 14px; border-bottom:0; }
+  body.style-cards .sp-prayer { padding:14px 18px 12px; margin-top:10px; }
+  body.style-cards .sp-wx { border-top:1px solid rgba(255,255,255,.06); padding-top:10px; margin-top:12px; }
+  body.style-cards.day .sp-wx { border-top-color:rgba(20,30,48,.07); }
+  body.style-cards #drive .sp-card { background:rgba(15,18,23,.62); border-color:rgba(255,255,255,.07);
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); }
+  body.style-cards.day #drive .sp-card { background:rgba(255,255,255,.74); border-color:rgba(20,30,48,.08); }
+  .sp-time { padding:2px 2px 18px; border-bottom:1px solid rgba(255,255,255,.075); }
+  .day .sp-time { border-bottom-color:rgba(20,30,48,.10); }
+  .sp-date { font-size:14px; color:#8A9099; letter-spacing:.2px; }
+  .sp-clock { font-size:80px; font-weight:200; line-height:.92; letter-spacing:-3.5px; font-variant-numeric:tabular-nums;
+    direction:rtl; display:flex; align-items:baseline; justify-content:flex-start; margin-top:2px; }
+  .sp-clock .hm { direction:ltr; }
+  .sp-clock .ap { font-size:17px; font-weight:300; color:#8A9099; letter-spacing:0; margin-left:6px; }
+  .day .sp-clock { color:#101418; }
+  .sp-wx { margin-top:14px; }
+  .sp-wx .wxi { width:46px; height:46px; margin-left:12px; }
+  .sp-wx .wxi svg { width:44px; height:44px; }
+  .sp-deg { font-size:34px; font-weight:300; letter-spacing:-.5px; }
+  .sp-cond { font-size:13.5px; color:#6C7480; margin-top:3px; }
+  .day .sp-cond { color:#68727F; }
+  .sp-prayer { position:relative; flex:1; margin-top:20px; padding:0 2px; display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+  .sp-ptop { font-size:16.5px; color:#DCE7FF; }
+  .day .sp-ptop { color:#1E4EA8; }
+  .sp-pcd { font-size:13px; color:#6C7480; }
+  .sp-foot { display:flex; align-items:center; margin-top:auto; padding-top:6px; }
+  .sp-pause { flex:0 0 24px; width:24px; height:24px; border-radius:8px; margin-left:10px;
+    display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.11); }
+  .sp-pause:active { transform:scale(.95); }
+  .sp-pause svg { width:11px; height:11px; fill:#9AA4B2; stroke:none; }
+  .sp-pause.on { background:rgba(76,130,232,.26); border-color:rgba(143,182,255,.45); }
+  .sp-pause.on svg { fill:#DCE7FF; }
+  .sp-prog { flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.07); overflow:hidden; }
+  .sp-prog i { display:block; height:100%; width:0; background:linear-gradient(90deg,#3E7BE0,#8FB6FF); }
+  .sp-prog i.run { animation:slideBar 7s linear forwards; }
+  @keyframes slideBar { from { width:0 } to { width:100% } }
+  .day .sp-pause { background:rgba(16,24,40,.05); border-color:rgba(16,24,40,.10); }
+  .day .sp-pause svg { fill:#4A5563; }
+  .day .sp-prog { background:rgba(16,24,40,.08); }
+  .sp-slides { position:relative; flex:1; min-height:0; overflow:hidden; }
+  .sp-slide { position:absolute; top:0; left:0; right:0; bottom:0; display:none; }
+  .sp-slide.on { display:block; }
+  .slide-h { font-size:13.5px; color:#8A9099; margin-bottom:4px; }
+  .sum-row { display:flex; align-items:center; justify-content:space-between; font-size:14.5px; color:#C6CDD8;
+    padding:7px 0; border-bottom:1px solid rgba(255,255,255,.045); }
+  .sum-row:last-child { border-bottom:none; }
+  .sum-row b { color:#DCE7FF; font-weight:600; font-variant-numeric:tabular-nums; }
+  .day .sum-row { color:#39424F; border-bottom-color:rgba(20,30,48,.06); }
+  .day .sum-row b { color:#1E4EA8; }
+  .rain-row { display:flex; align-items:center; justify-content:space-between; font-size:15px; line-height:1.2; color:#C6CDD8;
+    padding:3px 0; border-bottom:1px solid rgba(255,255,255,.045); }
+  .rain-row:last-child { border-bottom:none; }
+  .rain-day { width:64px; color:#AEB6C2; font-size:15px; }
+  .rain-ico { font-size:17px; width:26px; text-align:center; }
+  .rain-pct { direction:ltr; font-variant-numeric:tabular-nums; }
+  .sp-dots { position:absolute; left:0; right:0; bottom:9px; display:flex; justify-content:center; direction:ltr; }
+  .sp-dots i { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.2); margin:0 3px; }
+  .sp-dots i.on { background:#8FB6FF; }
+  .day .rain-row { color:#39424F; border-bottom-color:rgba(20,30,48,.06); }
+  .day .rain-day { color:#5E6878; }
+  .day .sp-dots i { background:rgba(20,30,48,.18); }
+  .day .sp-dots i.on { background:#1E4EA8; }
+  .sp-list { margin-top:8px; }
+  .sp-row { display:flex; justify-content:space-between; font-size:15.5px; line-height:1.2; color:#AEB6C2;
+    padding:3px 0; border-bottom:1px solid rgba(255,255,255,.045); }
+  .sp-row:last-child { border-bottom:none; }
+  .sp-row.now { color:#DCE7FF; font-weight:600; font-size:16.5px; }
+  .day .sp-row { color:#5E6878; border-bottom-color:rgba(20,30,48,.06); }
+  .day .sp-row.now { color:#1E4EA8; }
+  .sp-btns { margin-top:10px; }
+  .sp-btns .sp-ico { margin:0 7px; }
+  .sp-pill { height:48px; border-radius:18px; display:flex; align-items:center; justify-content:center; font-size:15px;
+    background:rgba(76,130,232,.18); border:1px solid rgba(143,182,255,.35); color:#DCE7FF; }
+  .sp-ico { width:48px; height:48px; border-radius:18px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.08); }
+  .sp-ico svg { width:24px; height:24px; stroke:#9AA4B2; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  .sp-ico.on { background:rgba(76,130,232,.24); border-color:rgba(143,182,255,.45); }
+  .sp-ico.on svg { stroke:#9FC2FF; }
+  .sp-pill:active, .sp-ico:active { transform:scale(.97); }
+  .day .sp-ico { background:rgba(16,24,40,.05); border-color:rgba(16,24,40,.08); }
+  .day .sp-ico svg { stroke:#4A5563; }
+  .day .sp-pill { background:rgba(44,98,201,.12); border-color:rgba(44,98,201,.28); color:#1E4EA8; }
+
+  /* وضع الشاشة المقسومة: البطاقة فقط */
+  body.narrow #stage { transform:none !important; width:100vw; height:100vh; }
+  body.narrow .park-frame { width:100vw; height:100vh; padding:10px; display:block; }
+  body.narrow .pager, body.narrow .media, body.narrow .status { display:none !important; }
+  body.narrow .clockcard { width:100%; height:100%; }
+  body.narrow #sidepanel { width:100%; height:100%; }
+  body.narrow #drive { display:none !important; }
+  body.narrow .spclose { display:flex; }
+  body.narrow .sp-clock { font-size:64px; white-space:nowrap; }
+  body.narrow .sp-clock span { font-size:14px; }
+  body.narrow .sp-time { padding:14px 18px 12px; }
+  body.narrow .sp-wx { margin-top:8px; padding-top:8px; }
+  body.narrow .sp-pill { display:none; }
+  body.narrow .sp-btns { margin-top:8px; }
+  body.narrow .sp-prayer { flex:1; }
+
+  /* سرعة فوق الخريطة */
+  .speedpill { position:absolute; right:14px; bottom:14px; height:56px; padding:0 16px; border-radius:18px;
+    background:rgba(14,18,24,.84); border:1px solid rgba(255,255,255,.12); display:flex; align-items:baseline; z-index:900; }
+  .speedpill .num { font-size:34px; font-weight:250; letter-spacing:-1px; direction:ltr; }
+  .speedpill .unit { font-size:11.5px; color:#8A9099; margin-right:6px; }
+  .day .speedpill { background:rgba(255,255,255,.94); border-color:rgba(20,30,48,.12); }
+  .attrib { left:12px; right:auto; }
+  body.nomed .media, body.nomed .media-mini { display:none; }
+
+  /* صفحة الخيارات */
+  .opts-ov { position:absolute; top:0; left:0; width:1024px; height:600px; z-index:9500; display:none;
+    align-items:center; justify-content:center; background:rgba(4,6,9,.62); }
+  .opts-ov.on { display:flex; }
+  .opts-card { width:720px; max-height:582px; overflow-y:auto; overflow-x:hidden; border-radius:26px; padding:16px 22px; background:linear-gradient(160deg,#191C22,#0E1014);
+    border:1px solid rgba(255,255,255,.08); box-shadow:0 30px 70px rgba(0,0,0,.6); }
+  .day .opts-card { background:linear-gradient(160deg,#FFFFFF,#EEF2F8); border-color:rgba(20,30,48,.1); }
+  .opts-head { display:flex; align-items:center; font-size:17px; }
+  .day .opts-x { background:rgba(16,24,40,.05); border-color:rgba(20,30,48,.12); }
+  .opts-x { width:36px; height:36px; border-radius:13px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.09); font-size:17px; }
+  .opt-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.06); font-size:14.5px; color:#C6CDD8; }
+  .opt-row:last-child { border-bottom:none; }
+  .day .opt-row { color:#39424F; border-bottom-color:rgba(20,30,48,.07); }
+  .seg { display:flex; border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,.1); }
+  .seg div { padding:6px 13px; font-size:12.5px; color:#9AA4B2; background:rgba(255,255,255,.04); }
+  .seg div + div { border-right:1px solid rgba(255,255,255,.08); }
+  .seg div.on { background:rgba(76,130,232,.28); color:#DCE7FF; }
+  .day .seg { border-color:rgba(20,30,48,.12); }
+  .day .seg div { background:rgba(16,24,40,.04); color:#4A5563; }
+  .day .seg div.on { background:rgba(44,98,201,.16); color:#1E4EA8; }
+  .vol { -webkit-appearance:none; appearance:none; direction:ltr; width:250px; height:6px; border-radius:3px;
+    background:rgba(255,255,255,.16); outline:none; }
+  .vol::-webkit-slider-thumb { -webkit-appearance:none; width:26px; height:26px; border-radius:50%;
+    background:#8FB6FF; border:3px solid #14181F; box-shadow:0 2px 8px rgba(0,0,0,.4); }
+  .volval { font-size:13px; color:#8A9099; width:44px; text-align:left; margin-right:12px; direction:ltr; }
+  .day .vol { background:rgba(20,30,48,.16); }
+  .day .vol::-webkit-slider-thumb { background:#2C62C9; border-color:#FFFFFF; }
+  .chk { width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+    font-size:20px; color:transparent; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); }
+  .chk.on { background:rgba(76,130,232,.25); border-color:rgba(143,182,255,.5); color:#DCE7FF; }
+  .day .chk { background:rgba(16,24,40,.04); border-color:rgba(20,30,48,.12); }
+  .day .chk.on { background:rgba(44,98,201,.16); border-color:rgba(44,98,201,.4); color:#1E4EA8; }
+  .ap-grid { margin-top:12px; display:flex; flex-wrap:wrap; justify-content:space-between; max-height:468px; overflow-y:auto; overflow-x:hidden; }
+  .ap-grid .ap-row { width:48.5%; margin-bottom:9px; }
+  .ap-row { display:flex; align-items:center; padding:8px 10px; border-radius:14px; background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.07); }
+  .day .ap-row { background:rgba(16,24,40,.04); border-color:rgba(20,30,48,.08); }
+  .ap-row.off { opacity:.45; }
+  .ap-ico { width:34px; height:34px; border-radius:10px; object-fit:contain; background:rgba(255,255,255,.06); padding:5px; }
+  .ap-name { flex:1; min-width:0; font-size:13px; margin-right:10px; color:#C6CDD8; text-align:right;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .day .ap-name { color:#39424F; }
+  .ap-chk { width:28px; height:28px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+    font-size:15px; color:transparent; border:1px solid rgba(255,255,255,.14); }
+  .ap-chk.on { background:rgba(76,130,232,.28); border-color:rgba(143,182,255,.5); color:#DCE7FF; }
+  .day .ap-chk.on { background:rgba(44,98,201,.16); border-color:rgba(44,98,201,.4); color:#1E4EA8; }
+  .oin { width:150px; text-align:center; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    border-radius:12px; color:#DCE7FF; font-size:14px; padding:8px 10px; direction:ltr; }
+  .day .oin { background:rgba(16,24,40,.05); border-color:rgba(20,30,48,.12); color:#14181E; }
+  .opt-btn { padding:6px 14px; border-radius:14px; background:rgba(76,130,232,.2); border:1px solid rgba(143,182,255,.35);
+    color:#DCE7FF; font-size:13px; }
+  .day .opt-btn { background:rgba(44,98,201,.14); border-color:rgba(44,98,201,.3); color:#1E4EA8; }
+  .opt-info { font-size:12.5px; color:#8A9099; direction:ltr; }
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- ============ PARK ============ -->
+  <div class="state on" id="park">
+    <div class="bgwash bgwash-park"></div>
+    <div class="status">
+      <div class="side"><span class="dot" id="dot1"></span></div>
+    </div>
+
+    <div class="park-frame">
+      <div class="clockcard" id="sideHostPark">
+        <div id="sidepanel">
+          <div class="spclose" onclick="closeOverlayPanel()">✕</div>
+          <div class="sp-card sp-time">
+            <div class="row"><span class="sp-date" id="date1">—</span><div class="grow"></div></div>
+            <div class="sp-clock" id="clock1">—</div>
+            <div class="row sp-wx"><div class="wxi" id="wxi"></div><div><div class="sp-deg" id="temp1">—</div><div class="sp-cond">حائل · <span id="cond1">—</span></div></div></div>
+          </div>
+          <div class="sp-card sp-prayer">
+            <div class="sp-slides">
+              <div class="sp-slide on" id="sl1">
+                <div class="row"><span class="sp-ptop" id="prayer1">—</span><div class="grow"></div>
+                  <span class="sp-pcd"><span id="pbLbl">باقي</span> <span id="prayerCountdown">—</span></span></div>
+                <div class="pbar" style="margin-top:8px"><i id="pbarFill"></i></div>
+                <div class="sp-list" id="spList"></div>
+              </div>
+              <div class="sp-slide" id="sl2">
+                <div class="slide-h">توقعات الأمطار</div>
+                <div class="rain-list" id="rainList">—</div>
+              </div>
+              <div class="sp-slide" id="sl4">
+                <div class="slide-h">ملخص اليوم</div>
+                <div class="sum-row"><span>🌅 الشروق <b id="sumSunrise">—</b></span><span>الغروب <b id="sumSunset">—</b></span></div>
+                <div class="sum-row"><span>🛣️ المسافة <b id="sumKm">0</b> كم</span><span>المتوسط <b id="sumAvg">0</b> كم/س</span></div>
+                <div class="sum-row"><span>🛠️ <b id="sumOil">الزيت: غير مسجل</b></span><span id="sumOilDays"></span></div>
+              </div>
+              <div class="sp-slide" id="sl3">
+                <div class="slide-h">الحرارة · الأيام القادمة</div>
+                <div class="rain-list" id="tempList">—</div>
+              </div>
+            </div>
+            <div class="sp-foot">
+              <div class="sp-pause" id="slidePause" onclick="toggleSlides()">
+                <svg id="pauseIco" viewBox="0 0 24 24"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg>
+              </div>
+              <div class="sp-prog"><i id="slideProg"></i></div>
+            </div>
+          </div>
+          <div class="sp-btns">
+            <div class="sp-pill" id="statePill" onclick="toggleState()">وضع القيادة</div>
+            <div class="row" style="margin-top:10px;justify-content:center">
+              <div class="sp-ico on" id="wifi1" onclick="toggleWifi()">
+                <svg viewBox="0 0 24 24"><path d="M3.4 9.4a13 13 0 0 1 17.2 0"/><path d="M6.5 12.9a8.6 8.6 0 0 1 11 0"/><path d="M9.4 16.3a4.1 4.1 0 0 1 5.2 0"/><circle cx="12" cy="19.3" r="1.1"/></svg>
+              </div>
+              <div class="sp-ico" id="bt1" onclick="toggleBt()">
+                <svg viewBox="0 0 24 24"><path d="M7 7.5l10 9-5 4V3.5l5 4-10 9"/></svg>
+              </div>
+              <div class="sp-ico" id="themeBtn" onclick="toggleThemeBtn()">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4L17 7M7 17l-1.6 1.6"/></svg>
+              </div>
+              <div class="sp-ico" id="optsBtn" onclick="openOpts()">
+                <svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h12M20 17h0"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="17" r="2"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pager" id="pager">
+        <div class="pages" id="pages">
+          <div class="page" id="page1">
+            <div class="tile hi" onclick="Native.map()">
+              <svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+              <span class="lbl">الخريطة</span>
+            </div>
+            <div class="tile" onclick="Native.openApp('org.smarttube.stable')">
+              <svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="M10 9.2l5 2.8-5 2.8z"/></svg>
+              <span class="lbl">يوتيوب</span>
+            </div>
+            <div class="tile" onclick="Native.openApp('com.nwd.radio')">
+              <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2.5"/><path d="M7.5 7V5.5h9V7"/><circle cx="9.5" cy="12.5" r="2"/><path d="M14.5 11h3M14.5 14h3"/></svg>
+              <span class="lbl">الراديو</span>
+            </div>
+            <div class="tile" onclick="Native.openMusic()">
+              <svg viewBox="0 0 24 24"><path d="M9 18V6l9-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="15.5" cy="16" r="2.5"/></svg>
+              <span class="lbl">الموسيقى</span>
+            </div>
+            <div class="tile" onclick="Native.openApp('sa.hudhud.maps')">
+              <svg viewBox="0 0 24 24"><path d="M4 6.5l5-2 6 2 5-2v13l-5 2-6-2-5 2z"/><path d="M9 4.5v13M15 6.5v13"/></svg>
+              <span class="lbl">هدهد</span>
+            </div>
+            <div class="tile" onclick="Native.settings()">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14.5a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.4l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1.1 1.7 1.7 0 0 0-.4-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+              <span class="lbl">الإعدادات</span>
+            </div>
+          </div>
+          <div class="page" id="page2">
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+          </div>
+          <div class="page" id="page3">
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+            <div class="tile"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.6"/><rect x="13" y="13" width="7" height="7" rx="1.6"/></svg><span class="lbl">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="media">
+      <div class="mctl">
+        <div class="mbtn" onclick="mediaPrev()">
+          <svg viewBox="0 0 24 24"><path d="M7 5v14"/><path d="M19 5.5 9.5 12 19 18.5z"/></svg>
+        </div>
+        <div class="mbtn play" id="playBtn" onclick="mediaToggle()">
+          <svg viewBox="0 0 24 24" id="playIco"><path d="M8 5.5 18.5 12 8 18.5z"/></svg>
+        </div>
+        <div class="mbtn" onclick="mediaNext()">
+          <svg viewBox="0 0 24 24"><path d="M17 5v14"/><path d="M5 5.5 14.5 12 5 18.5z"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ DRIVE ============ -->
+  <div class="state" id="drive">
+    <div class="bgwash bgwash-drive"></div>
+        <div class="map" id="mapbox">
+          <div class="rot" id="rot"><div class="tiles" id="tiles"></div></div>
+          <div class="mapfade"></div>
+          <div class="car" id="car"><svg viewBox="0 0 24 24"><path d="M12 2.6l6.4 17.4L12 16.6 5.6 20z" fill="#5B9BFF" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+          <div class="nogps" id="nogps">بانتظار إشارة GPS</div>
+          <div class="compass up" id="compass" onclick="toggleCompass()">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 6.5l-2 6 2-1 2 1z"/><path d="M12 17.5l2-6-2 1-2-1z"/></svg>
+          </div>
+          <div class="maptilt" id="maptilt" onclick="toggleTilt()"><span id="tiltLbl">3D</span></div>
+          <div class="mapbtn" onclick="Native.map()">
+            <svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+            <span>الملاحة</span>
+          </div>
+          <div class="speedpill"><span class="num" id="speed2">0</span><span class="unit">كم/س</span></div>
+          <div class="attrib">© Esri · OpenStreetMap</div>
+        </div>
+    <div class="scrim-t"></div>
+    <div class="scrim-r"></div>
+    <div class="scrim-l"></div>
+    <div class="status">
+      <div class="side"><span class="dot" id="dot2"></span><span class="badge drive-tag">وضع القيادة</span></div>
+    </div>
+
+    <div class="drive">
+      <div class="left">
+        <div class="media-mini">
+          <div class="mctl">
+            <div class="mbtn sm" onclick="mediaPrev()">
+              <svg viewBox="0 0 24 24"><path d="M7 5v14"/><path d="M19 5.5 9.5 12 19 18.5z"/></svg>
+            </div>
+            <div class="mbtn sm play" onclick="mediaToggle()">
+              <svg viewBox="0 0 24 24"><path d="M8 5.5 18.5 12 8 18.5z"/></svg>
+            </div>
+            <div class="mbtn sm" onclick="mediaNext()">
+              <svg viewBox="0 0 24 24"><path d="M17 5v14"/><path d="M5 5.5 14.5 12 5 18.5z"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-col" id="sideHostDrive"></div>
+    </div>
+  </div>
+
+  <!-- ============ إشعار الأذان ============ -->
+  <div class="adhan-ov" id="adhanOv" onclick="hideAdhan()">
+    <div class="adhan-card">
+      <div class="ad-top">حان الآن وقت صلاة</div>
+      <div class="ad-name" id="adName">—</div>
+      <div class="ad-time"><span class="n" id="adTime">—</span><span class="s">م</span></div>
+      <div class="ad-sub">الإقامة <span class="ad-cd" id="adIq">—</span> &nbsp;·&nbsp; باقي <span class="ad-cd" id="adCd">—</span></div>
+      <div class="ad-bar"><i id="adBar"></i></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  var LAT = 27.5236, LON = 41.6925;   // حائل
+
+  /* ---------- معاينة على الماك: بديل جسر الـNative لما نفتح الملف في متصفح ---------- */
+  var PREVIEW = (typeof Native === 'undefined');
+  if (PREVIEW) {
+    window.__simSpeed = 0;
+    window.__simBt = true;
+    window.Native = {
+      pos: function () { return '27.5236,41.6925'; },
+      speed: function () { return window.__simSpeed; },
+      heading: function () { return 315; },
+      netState: function () { return 2; },
+      btOn: function () { return !!window.__simBt; },
+      btToggle: function () { window.__simBt = !window.__simBt; return window.__simBt; },
+      wifiOn: function () { return window.__simWifi === undefined ? true : !!window.__simWifi; },
+      wifiToggle: function () { window.__simWifi = !(window.__simWifi === undefined ? true : window.__simWifi); return window.__simWifi; },
+      mediaPrev: function () {}, mediaNext: function () {}, mediaToggle: function () {},
+      adhanSound: function () { console.log('adhan sound (preview)'); }, iqamaSound: function () { console.log('iqama sound (preview)'); }, stopAdhan: function () {},
+      apps: function () { return '[]'; },
+      openApp: function () {}, openMusic: function () {}, map: function () {},
+      tile: function () {}, dial: function () {}, settings: function () {}, cacheTile: function () {},
+      forceState: function (s) { setCarState(s, s === 'drive' ? (window.__simSpeed = 60) : (window.__simSpeed = 0)); }
+    };
+  }
+
+  function scaleStage() {
+    if (document.body.classList.contains('narrow')) {
+      document.getElementById('stage').style.transform = 'none';
+      return;
+    }
+    var s = Math.min(window.innerWidth / 1024, window.innerHeight / 600);
+    document.getElementById('stage').style.transform = 'scale(' + s + ')';
+  }
+  function applyNarrow() {
+    var n = window.innerWidth < 700;
+    document.body.classList.toggle('narrow', n);
+    scaleStage();
+  }
+  window.addEventListener('resize', applyNarrow);
+  applyNarrow();
+  applyUiStyle();
+
+  var uiStyle = 'float';
+  try { uiStyle = localStorage.getItem('ui_style') || 'float'; } catch (e) {}
+  function applyUiStyle() {
+    document.body.classList.toggle('style-cards', uiStyle === 'cards');
+    var a = document.getElementById('stFloat'), b = document.getElementById('stCards');
+    if (a) a.classList.toggle('on', uiStyle === 'float');
+    if (b) b.classList.toggle('on', uiStyle === 'cards');
+  }
+  function setUiStyle(v) {
+    uiStyle = (v === 'cards') ? 'cards' : 'float';
+    try { localStorage.setItem('ui_style', uiStyle); } catch (e) {}
+    applyUiStyle();
+  }
+  function toggleState() {
+    try { Native.forceState(state === 'drive' ? 'park' : 'drive'); } catch (e) {}
+  }
+  function toggleThemeBtn() {
+    var isDay = document.documentElement.className === 'day';
+    themeMode = isDay ? 'night' : 'day';
+    evaluateTheme();
+    var b = document.getElementById('themeBtn');
+    if (b) b.classList.toggle('on', themeMode === 'night');
+  }
+  function paintThemeSeg() {
+    var m = { auto: 'thAuto', day: 'thDay', night: 'thNight' };
+    for (var k in m) { var el = document.getElementById(m[k]); if (el) el.classList.toggle('on', themeMode === k); }
+  }
+  function openOpts() {
+    var ov = document.getElementById('optsOv');
+    if (!ov) return;
+    try { applyUiStyle(); } catch (e) {}
+    var info = document.getElementById('optInfo');
+    if (info) {
+      var ip = '', ver = '';
+      try { ip = Native.ip() || ''; } catch (e) {}
+      try { ver = Native.version() || ''; } catch (e) {}
+      info.textContent = (ip || '—') + (ver ? ' · ' + ver : '');
+    }
+    paintThemeSeg();
+    try { paintAdhanSeg(); } catch (e) {}
+    ov.classList.add('on');
+  }
+  function closeOverlayPanel() { try { Native.closeOverlay(); } catch (e) {} }
+  function closeOpts() { var ov = document.getElementById('optsOv'); if (ov) ov.classList.remove('on'); }
+  function setBright(v) { try { Native.setBrightness(v); } catch (e) {} }
+  var duckOn = true, adhanSoundOn = true, iqamaSoundOn = true;
+  try { adhanSoundOn = localStorage.getItem('adhan_sound') !== '0'; } catch (e) {}
+  try { iqamaSoundOn = localStorage.getItem('iqama_sound') !== '0'; } catch (e) {}
+  try { duckOn = Native.duckEnabled(); } catch (e) {}
+  function onVolInput(v) {
+    var n = parseInt(v, 10); if (isNaN(n)) n = 0;
+    setText('volVal', n + '%');
+    try { Native.setMediaVolume(n); } catch (e) {}
+  }
+  function paintVolume() {
+    var v = 0;
+    try { v = Native.mediaVolume(); } catch (e) { v = 0; }
+    var sl = document.getElementById('volSlider');
+    if (sl) sl.value = v;
+    setText('volVal', v + '%');
+  }
+  function toggleChk(which) {
+    if (which === 'adhan') {
+      adhanSoundOn = !adhanSoundOn;
+      try { localStorage.setItem('adhan_sound', adhanSoundOn ? '1' : '0'); } catch (e) {}
+    } else {
+      iqamaSoundOn = !iqamaSoundOn;
+      try { localStorage.setItem('iqama_sound', iqamaSoundOn ? '1' : '0'); } catch (e) {}
+    }
+    paintChk();
+  }
+  function paintChk() {
+    var a = document.getElementById('chkAdhan'), i = document.getElementById('chkIqama');
+    if (a) a.classList.toggle('on', adhanSoundOn);
+    if (i) i.classList.toggle('on', iqamaSoundOn);
+  }
+  function setDuckOpt(on) { duckOn = !!on; try { Native.setDuck(!!on); } catch (e) {} paintChk(); paintDuck(); }
+  function paintDuck() {
+    var d1 = document.getElementById('dkOn'), d2 = document.getElementById('dkOff');
+    if (d1) d1.classList.toggle('on', duckOn);
+    if (d2) d2.classList.toggle('on', !duckOn);
+  }
+  function paintAdhanSeg() { paintDuck(); paintChk(); try { paintVolume(); } catch (e) {} }
+  function setMediaBar(on) { document.body.classList.toggle('nomed', !on); }
+  function restartApp() { try { Native.restart(); } catch (e) {} }
+  /* ---------- كاروسيل البطاقة السفلية ---------- */
+  var slideIdx = 0, slideTimer = null, slidesPaused = false;
+  function slideBarRun(play) {
+    var b = document.getElementById('slideProg');
+    if (!b) return;
+    b.classList.remove('run'); void b.offsetWidth; b.classList.add('run');
+    b.style.animationPlayState = play ? 'running' : 'paused';
+  }
+  function setSlide(i) {
+    slideIdx = i;
+    if (i === 3) { try { renderSummary(); } catch (e) {} }
+    for (var k = 1; k <= 4; k++) {
+      var el = document.getElementById('sl' + k);
+      if (el) el.classList.toggle('on', (k - 1) === i);
+    }
+    if (!slidesPaused) slideBarRun(true);
+  }
+  function startSlides() {
+    clearInterval(slideTimer);
+    slideTimer = setInterval(function () { setSlide((slideIdx + 1) % 4); }, 7000);
+    if (!slidesPaused) slideBarRun(true);
+  }
+  function toggleSlides() {
+    slidesPaused = !slidesPaused;
+    var btn = document.getElementById('slidePause'), ico = document.getElementById('pauseIco'), b = document.getElementById('slideProg');
+    if (slidesPaused) {
+      clearInterval(slideTimer); slideTimer = null;
+      if (b) b.style.animationPlayState = 'paused';
+      if (ico) ico.innerHTML = '<path d="M8 5.5 18.5 12 8 18.5z"/>';
+      if (btn) btn.classList.add('on');
+    } else {
+      if (ico) ico.innerHTML = '<rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/>';
+      if (btn) btn.classList.remove('on');
+      startSlides();
+    }
+  }
+  startSlides();
+
+  var WXEMO = function (c) {
+    c = parseInt(c, 10);
+    if (c === 0) return '☀️';
+    if (c === 1 || c === 2) return '⛅';
+    if (c === 3) return '☁️';
+    if (c === 45 || c === 48) return '🌫️';
+    if (c >= 51 && c <= 67) return '🌧️';
+    if (c >= 71 && c <= 77) return '❄️';
+    if (c >= 80 && c <= 82) return '🌦️';
+    if (c >= 95) return '⛈️';
+    return '☁️';
+  };
+  /* ---------- ملخص اليوم: شروق/غروب · رحلة · صيانة ---------- */
+  var tripKm = 0, tripSec = 0, tripMax = 0, lastTripLat = null, lastTripLon = null;
+  function distKm(a1, o1, a2, o2) {
+    var R = 6371, dA = (a2 - a1) * Math.PI / 180, dO = (o2 - o1) * Math.PI / 180;
+    var x = Math.sin(dA / 2) * Math.sin(dA / 2) +
+            Math.cos(a1 * Math.PI / 180) * Math.cos(a2 * Math.PI / 180) * Math.sin(dO / 2) * Math.sin(dO / 2);
+    return 2 * R * Math.asin(Math.sqrt(x));
+  }
+  function tripTick(lat, lon, spd) {
+    if (lastTripLat !== null) {
+      var d = distKm(lastTripLat, lastTripLon, lat, lon);
+      if (d > 0.003 && d < 1) {
+        tripKm += d;
+        oilSince += d;
+        try { localStorage.setItem('oil_since', oilSince.toFixed(2)); } catch (e) {}
+      }
+    }
+    lastTripLat = lat; lastTripLon = lon;
+    tripSec += 2.5;
+    if (spd > tripMax) tripMax = spd;
+  }
+  function two2(n) { n = Math.round(n); return n < 10 ? '0' + n : '' + n; }
+  /* ---------- الزيت ---------- */
+  var oilBase = 0, oilSince = 0, oilDate = '', oilIntKm = 5000, oilIntDays = 180;
+  try {
+    oilBase = parseFloat(localStorage.getItem('oil_base') || '0') || 0;
+    oilSince = parseFloat(localStorage.getItem('oil_since') || '0') || 0;
+    oilDate = localStorage.getItem('oil_date') || '';
+    oilIntKm = parseFloat(localStorage.getItem('oil_int_km') || '5000') || 5000;
+    oilIntDays = parseFloat(localStorage.getItem('oil_int_days') || '180') || 180;
+  } catch (e) {}
+  function todayISO() {
+    var d = new Date();
+    return d.getFullYear() + '-' + two2(d.getMonth() + 1) + '-' + two2(d.getDate());
+  }
+  function openOil() {
+    var ov = document.getElementById('oilOv');
+    if (!ov) return;
+    var od = document.getElementById('oilOdo'), dt = document.getElementById('oilDate');
+    if (od) od.value = oilBase ? Math.round(oilBase) : '';
+    if (dt) dt.value = oilDate || todayISO();
+    paintOilSeg();
+    ov.classList.add('on');
+  }
+  function closeOil() { var ov = document.getElementById('oilOv'); if (ov) ov.classList.remove('on'); }
+  function setOilInt(km, days) {
+    oilIntKm = km; oilIntDays = days; paintOilSeg();
+  }
+  function paintOilSeg() {
+    var a = document.getElementById('oi1'), b = document.getElementById('oi2');
+    if (a) a.classList.toggle('on', oilIntKm <= 5000);
+    if (b) b.classList.toggle('on', oilIntKm > 5000);
+  }
+  function saveOil() {
+    var od = document.getElementById('oilOdo'), dt = document.getElementById('oilDate');
+    oilBase = parseFloat(od && od.value ? od.value : '0') || 0;
+    oilDate = (dt && dt.value) ? dt.value : todayISO();
+    oilSince = 0;
+    try {
+      localStorage.setItem('oil_base', String(oilBase));
+      localStorage.setItem('oil_date', oilDate);
+      localStorage.setItem('oil_since', '0');
+      localStorage.setItem('oil_int_km', String(oilIntKm));
+      localStorage.setItem('oil_int_days', String(oilIntDays));
+    } catch (e) {}
+    closeOil();
+    renderSummary();
+    toastText('تم تسجيل تغيير الزيت');
+  }
+  function toastText(t) {
+    var el = document.getElementById('toastMsg');
+    if (!el) return;
+    el.textContent = t; el.classList.add('on');
+    setTimeout(function () { el.classList.remove('on'); }, 2600);
+  }
+  function renderSummary() {
+    var sr = document.getElementById('sumSunrise'), ss = document.getElementById('sumSunset');
+    if (sr) sr.textContent = sunriseMin === null ? '—' : fmt12(sunriseMin);
+    if (ss) ss.textContent = sunsetMin === null ? '—' : fmt12(sunsetMin);
+    var km = document.getElementById('sumKm'), av = document.getElementById('sumAvg');
+    if (km) km.textContent = tripKm < 10 ? tripKm.toFixed(1) : Math.round(tripKm);
+    if (av) {
+      var h = tripSec / 3600;
+      av.textContent = (h > 0.02 && tripKm > 0.05) ? Math.round(tripKm / h) : '0';
+    }
+    var oil = document.getElementById('sumOil'), oilD = document.getElementById('sumOilDays');
+    if (!oilDate) {
+      if (oil) oil.textContent = 'الزيت: غير مسجل';
+      if (oilD) oilD.textContent = '';
+    } else {
+      var remKm = Math.round(oilIntKm - oilSince);
+      var usedDays = Math.floor((Date.now() - new Date(oilDate + 'T00:00:00').getTime()) / 86400000);
+      var remDays = Math.round(oilIntDays - usedDays);
+      var late = (remKm <= 0 || remDays <= 0);
+      if (oil) oil.textContent = late ? 'الزيت متأخر' : 'باقي للزيت';
+      if (oilD) oilD.textContent = (late ? '' : '') + Math.abs(remKm).toLocaleString('en') + ' كم · ' + Math.abs(remDays) + ' يوم';
+    }
+  }
+  setInterval(function () { if (slideIdx === 3) { try { renderSummary(); } catch (e) {} } }, 30000);
+
+  function renderDays(d) {
+    if (!d || !d.time) return;
+    var DAYS2 = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    var rh = '', th = '';
+    for (var i = 0; i < d.time.length && i < 4; i++) {
+      var dt = new Date(d.time[i] + 'T00:00:00');
+      var lbl = i === 0 ? 'اليوم' : (i === 1 ? 'غدًا' : DAYS2[dt.getDay()]);
+      var p = d.precipitation_probability_max ? (d.precipitation_probability_max[i] || 0) : 0;
+      var mx = Math.round(d.temperature_2m_max[i]);
+      var mn = Math.round(d.temperature_2m_min[i]);
+      var ico = WXEMO(d.weather_code[i]);
+      rh += '<div class="rain-row"><span class="rain-day">' + lbl + '</span><span class="rain-ico">' + ico +
+            '</span><span class="rain-pct">' + p + '%</span></div>';
+      th += '<div class="rain-row"><span class="rain-day">' + lbl + '</span><span class="rain-ico">' + ico +
+            '</span><span class="rain-pct">' + mx + '° / ' + mn + '°</span></div>';
+    }
+    var r = document.getElementById('rainList'), t = document.getElementById('tempList');
+    if (r) r.innerHTML = rh;
+    if (t) t.innerHTML = th;
+  }
+  function loadDays() {
+    var p = curPos();
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + p.lat + '&longitude=' + p.lon +
+          '&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min,weather_code' +
+          '&timezone=Asia%2FRiyadh&forecast_days=5')
+      .then(function (r) { return r.json(); })
+      .then(function (j) { renderDays(j.daily); })
+      .catch(function () {});
+  }
+  loadDays();
+  setInterval(loadDays, 1800000);
+
+  function renderPrayerList(rows, nowMin) {
+    var el = document.getElementById('spList');
+    if (!el || !rows || !rows.length) return;
+    var cur = -1;
+    for (var k = 0; k < rows.length; k++) if (rows[k].min <= nowMin) cur = k;
+    var h = '', from = cur < 0 ? 0 : Math.min(cur, Math.max(0, rows.length - 4));
+    for (var i = from; i < rows.length && i < from + 4; i++) {
+      h += '<div class="sp-row' + (i === cur ? ' now' : '') + '"><span>' + rows[i].name + '</span>' +
+           '<span style="direction:ltr">' + fmt12(rows[i].min) + '</span></div>';
+    }
+    el.innerHTML = h;
+  }
+
+  var state = 'park';
+  window.setCarState = function (s, spd) {
+    if (s === 'idle') s = 'park';
+    state = s;
+    document.getElementById('park').classList.toggle('on', s === 'park');
+    document.getElementById('drive').classList.toggle('on', s === 'drive');
+    var pnl = document.getElementById('sidepanel');
+    var host = document.getElementById(s === 'drive' ? 'sideHostDrive' : 'sideHostPark');
+    if (pnl && host && pnl.parentNode !== host) host.appendChild(pnl);
+    if (s === 'park') hudOpenedForDrive = false;
+    var pill = document.getElementById('statePill');
+    if (pill) pill.textContent = s === 'drive' ? 'الرئيسية' : 'وضع القيادة';
+    if (typeof spd === 'number') setSpeed(spd);
+    if (s === 'drive') { tickMap(); }
+  };
+  window.setSpeed = function (v) {
+    var el = document.getElementById('speed2');
+    if (el && el.textContent !== String(v)) el.textContent = v;
+  };
+
+  /* ---------- خريطة: أوفلاين أولاً ثم النت ---------- */
+  var MAPZ = 16, TILE = 256, tileEls = {};
+  var northUp = false;
+  var heading = -1, lastRot = 0;
+
+  function lngToPx(lon) { return (lon + 180) / 360 * TILE * Math.pow(2, MAPZ); }
+  function latToPy(lat) {
+    var s = Math.sin(lat * Math.PI / 180);
+    return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * TILE * Math.pow(2, MAPZ);
+  }
+  function themeName() { return document.documentElement.className === 'day' ? 'light' : 'dark'; }
+  function netTileUrl(z, x, y) {
+    var style = themeName() === 'light' ? 'World_Light_Gray_Base' : 'World_Dark_Gray_Base';
+    return 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/' + style + '/MapServer/tile/' + z + '/' + y + '/' + x;
+  }
+  function localTileUrl(z, x, y) {
+    try { return Native.tile(themeName(), z, x, y) || ''; } catch (e) { return ''; }
+  }
+
+  function drawMap(lat, lon) {
+    if (!isFinite(lat) || !isFinite(lon) || (lat === 0 && lon === 0)) return;
+    var box = document.getElementById('mapbox'), layer = document.getElementById('tiles');
+    if (!box || !layer) return;
+    var W = box.clientWidth, H = box.clientHeight;
+    if (!W || !H) return;
+    var left = lngToPx(lon) - W / 2, top = latToPy(lat) - H / 2;   // موقعي دائمًا في منتصف الخريطة
+    var pad = 3;
+    var x0 = Math.floor(left / TILE) - pad, y0 = Math.floor(top / TILE) - pad;
+    var x1 = Math.floor((left + W) / TILE) + pad, y1 = Math.floor((top + H) / TILE) + pad;
+    var n = Math.pow(2, MAPZ), seen = {};
+    for (var tx = x0; tx <= x1; tx++) {
+      for (var ty = y0; ty <= y1; ty++) {
+        if (ty < 0 || ty >= n) continue;
+        var k = tx + '_' + ty; seen[k] = 1;
+        var img = tileEls[k];
+        if (!img) {
+          img = document.createElement('img');
+          img.className = 'mtile';
+          img._x = (((tx % n) + n) % n); img._y = ty; img._z = MAPZ;
+          img._net = false; img._tries = 0;
+          img._local = localTileUrl(MAPZ, img._x, ty);
+          img.src = img._local || netTileUrl(MAPZ, img._x, ty);
+          img.onerror = function () { tileFail(this); };
+          img.onload = function () { tileOk(this); };
+          layer.appendChild(img);
+          tileEls[k] = img;
+        }
+        img.style.left = Math.round(tx * TILE - left) + 'px';
+        img.style.top = Math.round(ty * TILE - top) + 'px';
+      }
+    }
+    for (var d in tileEls) {
+      if (!seen[d]) {
+        if (tileEls[d].parentNode) tileEls[d].parentNode.removeChild(tileEls[d]);
+        delete tileEls[d];
+      }
+    }
+    var ng = document.getElementById('nogps');
+    if (ng) ng.style.display = 'none';
+  }
+
+  function tileFail(im) {
+    if (!im.parentNode) return;
+    if (!im._net) { im._net = true; im.src = netTileUrl(im._z, im._x, im._y); return; }
+    if (im._tries >= 5) return;
+    im._tries++;
+    setTimeout(function () {
+      if (im.parentNode) im.src = netTileUrl(im._z, im._x, im._y) + '?r=' + im._tries;
+    }, 1000 * im._tries);
+  }
+  function tileOk(im) {
+    if (im._net && im._tries === 0) {
+      try { Native.cacheTile(themeName(), im._z, im._x, im._y); } catch (e) {}
+    }
+  }
+  function healTiles() {
+    for (var k in tileEls) {
+      var im = tileEls[k];
+      if (im.complete && im.naturalWidth === 0) tileFail(im);
+    }
+  }
+  setInterval(healTiles, 10000);
+  window.addEventListener('online', function () { healTiles(); });
+
+  var mapFlat = false;
+  try { mapFlat = localStorage.getItem('map_flat') === '1'; } catch (e) {}
+  function paintTilt() {
+    var box = document.getElementById('mapbox'), btn = document.getElementById('maptilt'), lb = document.getElementById('tiltLbl');
+    if (box) box.classList.toggle('flat', mapFlat);
+    if (btn) btn.classList.toggle('flat', mapFlat);
+    if (lb) lb.textContent = mapFlat ? '2D' : '3D';
+  }
+  function toggleTilt() {
+    mapFlat = !mapFlat;
+    try { localStorage.setItem('map_flat', mapFlat ? '1' : '0'); } catch (e) {}
+    paintTilt();
+    try { if (window.redrawMap) window.redrawMap(); } catch (e) {}
+    applyHeading();
+  }
+  paintTilt();
+
+  function applyHeading() {
+    var rot = document.getElementById('rot'), car = document.getElementById('car');
+    if (!rot || !car) return;
+    var h = heading < 0 ? 0 : heading;
+    var target = northUp ? 0 : -h;
+    var d = target - lastRot;
+    while (d > 180) d -= 360;
+    while (d < -180) d += 360;
+    lastRot = lastRot + d;
+    rot.style.transform = mapFlat
+      ? 'rotate(' + lastRot + 'deg) scale(1.75)'
+      : 'perspective(1100px) rotateX(50deg) rotate(' + lastRot + 'deg) scale(1.75)';
+    car.style.transform = northUp ? 'rotate(' + h + 'deg)' : 'rotate(0deg)';
+    console.log('rot ' + lastRot + ' northUp ' + northUp + ' flat ' + mapFlat);
+  }
+  function toggleCompass() {
+    northUp = !northUp;
+    document.getElementById('compass').classList.toggle('up', !northUp);
+    applyHeading();
+  }
+  window.setHeadingTest = function (d) { heading = d; applyHeading(); };
+
+  var curLat = LAT, curLon = LON, haveFix = false;
+  function tickMap() {
+    if (state !== 'drive') return;
+    var p = '';
+    try { p = Native.pos(); } catch (e) { p = ''; }
+    if (p && p.indexOf(',') > 0) {
+      var a = p.split(',');
+      curLat = parseFloat(a[0]); curLon = parseFloat(a[1]); haveFix = true;
+    }
+    try { var h = Native.heading(); if (h >= 0) heading = h; } catch (e) {}
+    var spd = 0; try { spd = Native.speed(); } catch (e) {}
+    var ng = document.getElementById('nogps');
+    var car = document.getElementById('car');
+    var ok = haveFix && p;
+    if (ng) ng.style.display = ok ? 'none' : 'flex';
+    var g2 = document.getElementById('gps2');
+    if (g2) g2.textContent = ok ? '' : 'جاري التحديد';
+    if (car) car.style.display = ok ? 'block' : 'none';
+    drawMap(curLat, curLon);
+    applyHeading();
+    if (haveFix) { try { tripTick(curLat, curLon, spd); } catch (e) {} }
+  }
+  setInterval(tickMap, 2500);
+  window.redrawMap = function () { drawMap(haveFix ? curLat : LAT, haveFix ? curLon : LON); };
+
+
+
+  function two(n) { return n < 10 ? '0' + n : '' + n; }
+
+  var DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  var MONTHS = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+  function tickClock() {
+    var d = new Date();
+    var h = d.getHours();
+    var isPM = h >= 12;
+    var h12 = h % 12; if (h12 === 0) h12 = 12;
+    var hm = h12 + ':' + two(d.getMinutes());
+    var suffix = isPM ? ' م' : ' ص';
+
+    var c1 = document.getElementById('clock1');
+    if (c1) c1.innerHTML = '<span class="hm">' + hm + '</span><span class="ap">' + suffix + '</span>';
+    setText('clock2', hm + suffix);
+    setText('clock3', hm);
+
+    var ds = DAYS[d.getDay()] + ' · ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+    setText('date1', ds);
+    setText('dow1', DAYS[d.getDay()]);
+  }
+  function setText(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+
+  setInterval(tickClock, 15000);
+  tickClock();
+
+  /* ---------- الطقس ---------- */
+  var CODES = { 0:'صافي', 1:'صافي غالبًا', 2:'غائم جزئيًا', 3:'غائم', 45:'ضباب', 48:'ضباب', 51:'رذاذ', 53:'رذاذ', 55:'رذاذ',
+                61:'مطر خفيف', 63:'مطر', 65:'مطر غزير', 71:'ثلج', 80:'زخات', 81:'زخات', 82:'زخات قوية', 95:'عواصف رعدية' };
+
+  var WXSUN = '<circle cx="24" cy="21" r="8" fill="#FFC24B"/>' +
+    '<g stroke="#FFC24B" stroke-width="2.8" stroke-linecap="round">' +
+    '<path d="M24 5.5v4.2M24 32.3v4.2M8.5 21h4.2M35.3 21h4.2M13 10l3 3M32 29l3 3M35 10l-3 3M16 29l-3 3"/></g>';
+  var WXCLOUD = '<path d="M14 33.4h19.4a6.6 6.6 0 0 0 .6-13.2 9.8 9.8 0 0 0-18.7 2.4A5.9 5.9 0 0 0 14 33.4z" fill="#C9D4E4"/>';
+  var WXRAIN = '<g stroke="#6FA8FF" stroke-width="2.8" stroke-linecap="round"><path d="M18 37.5l-1.6 4.4M25 37.5l-1.6 4.4M32 37.5l-1.6 4.4"/></g>';
+  var WXSNOW = '<g fill="#DCE7F7"><circle cx="16.6" cy="40.4" r="1.9"/><circle cx="24" cy="42.6" r="1.9"/><circle cx="31.4" cy="40.4" r="1.9"/></g>';
+  var WXFOG = '<g stroke="#AEBACB" stroke-width="2.6" stroke-linecap="round"><path d="M9 38.5h30M13 43.5h22"/></g>';
+  var WXBOLT = '<path d="M25.6 34.6l-6.4 8.6h5.1l-1 5 7.2-9.4h-5z" fill="#FFC24B"/>';
+
+  function wxIcon(code) {
+    var c = parseInt(code, 10);
+    var body;
+    if (c === 0) body = WXSUN;
+    else if (c === 1) body = '<g transform="translate(0,4)"><g transform="translate(-3,-2) scale(.68)">' + WXSUN + '</g><g transform="translate(7,4) scale(.82)">' + WXCLOUD + '</g></g>';
+    else if (c === 2) body = '<g transform="translate(0,3)"><g transform="translate(-7,-1) scale(.62)">' + WXSUN + '</g><g transform="translate(4,3) scale(.92)">' + WXCLOUD + '</g></g>';
+    else if (c === 45 || c === 48) body = '<g transform="translate(0,-4)">' + WXCLOUD + '</g>' + WXFOG;
+    else if (c >= 51 && c <= 67) body = '<g transform="translate(0,-5) scale(.94)">' + WXCLOUD + '</g>' + WXRAIN;
+    else if (c >= 71 && c <= 77) body = '<g transform="translate(0,-5)">' + WXCLOUD + '</g>' + WXSNOW;
+    else if (c >= 80 && c <= 82) body = '<g transform="translate(0,-5)">' + WXCLOUD + '</g>' + WXRAIN;
+    else if (c === 85 || c === 86) body = '<g transform="translate(0,-5)">' + WXCLOUD + '</g>' + WXSNOW;
+    else if (c >= 95) body = '<g transform="translate(0,-6)">' + WXCLOUD + '</g>' + WXBOLT;
+    else body = WXCLOUD;
+    document.getElementById('wxi').innerHTML = '<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">' + body + '</svg>';
+  }
+
+  function loadWeather() {
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON +
+          '&current=temperature_2m,weather_code&timezone=Asia%2FRiyadh')
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var t = Math.round(j.current.temperature_2m);
+        var code = j.current.weather_code;
+        var c = CODES[code] || '—';
+        setText('temp1', t + '°'); setText('cond1', c);
+        setText('wx1', 'حائل ' + t + '°'); setText('wx2', 'حائل ' + t + '°');
+        wxIcon(code);
+      }).catch(function () {});
+  }
+  loadWeather();
+  setInterval(loadWeather, 600000);
+
+  /* ---------- مواقيت الصلاة ---------- */
+  var NAMES = [['Fajr','الفجر'], ['Dhuhr','الظهر'], ['Asr','العصر'], ['Maghrib','المغرب'], ['Isha','العشاء']];
+  var nextPrayerMin = null;
+  var lastPrayerFetch = 0;
+  var prayerSpanFrom = 0, prayerSpanTo = 1;
+  var lastPosKey = '';
+
+  function curPos() {
+    var p = '';
+    try { p = Native.pos(); } catch (e) { p = ''; }
+    if (p && p.indexOf(',') > 0) {
+      var a = p.split(',');
+      var la = parseFloat(a[0]), lo = parseFloat(a[1]);
+      if (isFinite(la) && isFinite(lo) && !(la === 0 && lo === 0)) return { lat: la, lon: lo };
+    }
+    return { lat: LAT, lon: LON };
+  }
+  function posKey(p) { return p.lat.toFixed(2) + '_' + p.lon.toFixed(2); }
+
+  function applyTimings(t, tomorrowFajr) {
+    if (!t) return;
+    var now = new Date();
+    var nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+    var IQ = { 'الفجر': 25, 'الظهر': 20, 'العصر': 20, 'المغرب': 10, 'العشاء': 20 };
+    var rows = [];
+    for (var i = 0; i < NAMES.length; i++) {
+      var hm = (t[NAMES[i][0]] || '').split(' ')[0].split(':');
+      if (hm.length < 2) continue;
+      var m = parseInt(hm[0], 10) * 60 + parseInt(hm[1], 10);
+      rows.push({ name: NAMES[i][1], min: m, iq: IQ[NAMES[i][1]] || 20 });
+    }
+    /* داخل وقت الإقامة؟ نعرض وقت الإقامة بدل الصلاة القادمة */
+    var inIqama = null;
+    for (var j = 0; j < rows.length; j++) {
+      if (nowMin >= rows[j].min && nowMin < rows[j].min + rows[j].iq) { inIqama = rows[j]; break; }
+    }
+    var label, target, from;
+    if (inIqama) {
+      label = 'إقامة ' + inIqama.name;
+      from = inIqama.min;
+      target = inIqama.min + inIqama.iq;
+    } else {
+      var next = null, idx = -1;
+      for (var k = 0; k < rows.length; k++) {
+        if (rows[k].min > nowMin) { next = rows[k]; idx = k; break; }
+      }
+      if (!next) {
+        var src = tomorrowFajr || t.Fajr;
+        var f = (src || '').split(' ')[0].split(':');
+        var fm = parseInt(f[0], 10) * 60 + parseInt(f[1], 10) + 24 * 60;
+        next = { name: 'الفجر', min: fm };
+        from = rows[rows.length - 1].min;
+      } else {
+        from = idx > 0 ? rows[idx - 1].min : rows[rows.length - 1].min - 1440;
+      }
+      label = next.name;
+      target = next.min;
+    }
+    nextPrayerMin = target;
+    prayerSpanFrom = from;
+    prayerSpanTo = target;
+    try { renderPrayerList(rows, nowMin); } catch (e) {}
+    if (inIqama) {
+      var dayKey = now.toDateString() + '|' + inIqama.name;
+      try { if (!lastAdhanKey) lastAdhanKey = localStorage.getItem('adhanKey') || ''; } catch (e) {}
+      if (dayKey !== lastAdhanKey) {
+        lastAdhanKey = dayKey;
+        try { localStorage.setItem('adhanKey', dayKey); } catch (e) {}
+        showAdhan(inIqama.name, inIqama.min, target, nowMin - inIqama.min);
+      }
+      pendingIqama = { key: dayKey, min: target };
+    }
+    setText('prayer1', label + ' ' + fmt12(target % 1440));
+    setText('nextPrayer2', label);
+    var pb = document.getElementById('pbLbl');
+    if (pb) pb.textContent = inIqama ? 'باقي للإقامة' : 'باقي';
+    tickPrayer();
+  }
+
+  /* حساب المواقيت محلياً (أم القرى) — ما يحتاج شبكة ولا كاش */
+  function prayerTimes(y, mo, d, lat, lon, tz) {
+    var D2R = Math.PI / 180, R2D = 180 / Math.PI;
+    var yy = y, mm = mo;
+    if (mm <= 2) { yy -= 1; mm += 12; }
+    var A = Math.floor(yy / 100), B = 2 - A + Math.floor(A / 4);
+    var jd = Math.floor(365.25 * (yy + 4716)) + Math.floor(30.6001 * (mm + 1)) + d + B - 1524.5;
+    var D = jd - 2451545.0;
+    var g = (357.529 + 0.98560028 * D) * D2R;
+    var q = 280.459 + 0.98564736 * D;
+    var L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * D2R;
+    var e = (23.439 - 0.00000036 * D) * D2R;
+    var dec = Math.asin(Math.sin(e) * Math.sin(L));
+    var ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L)) * R2D / 15;
+    var eqt = ((q / 15 - ra + 12) % 24) - 12;
+    var noon = 12 + tz - lon / 15 - eqt;
+    function ha(alt) {
+      var c = (Math.sin(alt * D2R) - Math.sin(lat * D2R) * Math.sin(dec)) /
+              (Math.cos(lat * D2R) * Math.cos(dec));
+      return (c > 1 || c < -1) ? null : Math.acos(c) * R2D / 15;
+    }
+    function hm(h) {
+      if (h === null) return '--:--';
+      h = ((h % 24) + 24) % 24;
+      var t = Math.round(h * 60);
+      return two(Math.floor(t / 60) % 24) + ':' + two(t % 60);
+    }
+    var fajrHA = ha(-18.5);            // أم القرى
+    var riseHA = ha(-0.833);
+    var asrAlt = Math.atan(1 / (1 + Math.tan(Math.abs(lat * D2R - dec)))) * R2D;
+    var asrHA = ha(asrAlt);
+    var maghrib = riseHA === null ? null : noon + riseHA;
+    return {
+      Fajr: hm(fajrHA === null ? null : noon - fajrHA),
+      Dhuhr: hm(noon),
+      Asr: hm(asrHA === null ? null : noon + asrHA),
+      Maghrib: hm(maghrib),
+      Isha: maghrib === null ? '--:--' : hm(maghrib + 1.5)   // ٩٠ دقيقة بعد المغرب
+    };
+  }
+
+  /* ---------- إشعار الأذان ---------- */
+  var adHideTimer = null, lastAdhanKey = '', pendingIqama = null, adTest = false;
+  function showAdhan(name, adhanMin, iqamaMin, sinceMin) {
+    var ov = document.getElementById('adhanOv');
+    if (!ov) return;
+    setText('adName', name);
+    setText('adTime', fmt12(adhanMin));
+    setText('adIq', fmt12(iqamaMin));
+    var ds = Math.max(0, Math.round((iqamaMin - adhanMin) * 60));
+    setText('adCd', two(Math.floor(ds / 3600)) + ':' + two(Math.floor((ds % 3600) / 60)) + ':' + two(ds % 60));
+    ov.classList.add('on');
+    if (adhanSoundOn && sinceMin <= 2) { try { Native.adhanSound(); } catch (e) {} }
+    if (adHideTimer) clearTimeout(adHideTimer);
+    adHideTimer = setTimeout(function () { hideAdhan(true); }, 20000);
+  }
+  function hideAdhan(auto) {
+    var ov = document.getElementById('adhanOv');
+    if (ov) ov.classList.remove('on');
+    if (adHideTimer) { clearTimeout(adHideTimer); adHideTimer = null; }
+    adTest = false;
+    if (auto !== true) { try { Native.stopAdhan(); } catch (e) {} }
+  }
+
+  window.testAdhan = function () { adTest = true; showAdhan('العصر', 913, 933, 0); };
+
+  function loadPrayer() {
+    var p = curPos();
+    var d = new Date();
+    var tz = -d.getTimezoneOffset() / 60;
+    var t = prayerTimes(d.getFullYear(), d.getMonth() + 1, d.getDate(), p.lat, p.lon, tz);
+    var nd = new Date(d.getTime() + 86400000);
+    var t2 = prayerTimes(nd.getFullYear(), nd.getMonth() + 1, nd.getDate(), p.lat, p.lon, tz);
+    lastPosKey = posKey(p);
+    lastPrayerFetch = Date.now();
+    applyTimings(t, t2.Fajr);
+  }
+
+  function tickPrayer() {
+    if (nextPrayerMin === null) return;
+    var d = new Date();
+    var nowSec = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+    var targetSec = nextPrayerMin * 60;
+    if (targetSec - nowSec > 12 * 3600) targetSec -= 86400;   // وقت بعد منتصف الليل
+    var left = targetSec - nowSec;
+    if (left < 0) {
+      if (pendingIqama) {
+        var ik = pendingIqama.key, done = '';
+        try { done = localStorage.getItem('iqamaKey') || ''; } catch (e) {}
+        if (ik !== done) {
+          try { localStorage.setItem('iqamaKey', ik); } catch (e) {}
+          if (iqamaSoundOn) { try { Native.iqamaSound(); } catch (e) {} }
+        }
+        pendingIqama = null;
+      }
+      if (Date.now() - lastPrayerFetch > 60000) loadPrayer();
+      left = 0;
+    }
+    var h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
+    setText('prayerCountdown', two(h) + ':' + two(m) + ':' + two(s));
+    setText('nextCount2', two(h) + ':' + two(m) + ':' + two(s));
+    /* شريط تقدم الوقت بين الصلاة السابقة والقادمة */
+    var nowMinF = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+    var span = prayerSpanTo - prayerSpanFrom;
+    var frac = span > 0 ? (nowMinF - prayerSpanFrom) / span : 0;
+    if (!isFinite(frac)) frac = 0;
+    frac = Math.max(0, Math.min(1, frac));
+    var fill = document.getElementById('pbarFill');
+    if (fill) fill.style.width = (frac * 100).toFixed(1) + '%';
+    /* بطاقة الأذان: نفس العدّاد ونفس الشريط */
+    var ov = document.getElementById('adhanOv');
+    if (ov && ov.className.indexOf('on') >= 0 && !adTest) {
+      setText('adCd', two(h) + ':' + two(m) + ':' + two(s));
+      var ab = document.getElementById('adBar');
+      if (ab) ab.style.width = (frac * 100).toFixed(1) + '%';
+    }
+  }
+  function fmt12(mins) {
+    var h = Math.floor(mins / 60) % 24, m = mins % 60;
+    var p = h >= 12 ? 'م' : 'ص'; var h12 = h % 12; if (h12 === 0) h12 = 12;
+    return h12 + ':' + two(m) + ' ' + p;
+  }
+  setInterval(tickPrayer, 1000);
+  loadPrayer();
+  setInterval(loadPrayer, 5 * 60 * 1000);
+  setInterval(function () {
+    var p = curPos();
+    if (posKey(p) !== lastPosKey) loadPrayer(true);
+  }, 60000);
+
+  /* ---------- الشبكة: نقطة لون فقط ---------- */
+  function net() {
+    var st = -1;
+    try { st = Native.netState(); } catch (e) { st = navigator.onLine ? 2 : 0; }
+    var cls = st === 2 ? '' : (st === 1 ? 'warn' : 'offline');
+    ['dot1', 'dot2'].forEach(function (id) {
+      var d = document.getElementById(id);
+      if (!d) return;
+      d.className = 'dot' + (cls ? ' ' + cls : '');
+    });
+  }
+  window.addEventListener('online', net);
+  window.addEventListener('offline', net);
+  net();
+  setInterval(net, 60000);
+
+  /* ---------- البلوتوث والواي فاي ---------- */
+  function paintBt(on) {
+    ['bt1', 'bt2'].forEach(function (id) {
+      var b = document.getElementById(id);
+      if (b) b.classList.toggle('on', !!on);
+    });
+  }
+  function paintWifi(on) {
+    ['wifi1', 'wifi2'].forEach(function (id) {
+      var b = document.getElementById(id);
+      if (b) b.classList.toggle('on', !!on);
+    });
+  }
+  function toggleBt() {
+    var on = false;
+    try { on = Native.btToggle(); } catch (e) {}
+    paintBt(on);
+    setTimeout(function () { try { paintBt(Native.btOn()); } catch (e) {} }, 1200);
+  }
+  function toggleWifi() {
+    var on = false;
+    try { on = Native.wifiToggle(); } catch (e) {}
+    paintWifi(on);
+    setTimeout(function () { try { paintWifi(Native.wifiOn()); } catch (e) {} }, 2000);
+  }
+  try { paintBt(Native.btOn()); } catch (e) {}
+  try { paintWifi(Native.wifiOn()); } catch (e) {}
+  setInterval(function () { try { paintBt(Native.btOn()); } catch (e) {} }, 15000);
+  setInterval(function () { try { paintWifi(Native.wifiOn()); } catch (e) {} }, 15000);
+
+  /* ---------- أزرار الصوتيات ---------- */
+  function mediaPrev() { try { Native.mediaPrev(); } catch (e) {} }
+  function mediaNext() { try { Native.mediaNext(); } catch (e) {} }
+  function mediaToggle() { try { Native.mediaToggle(); } catch (e) {} }
+
+  /* ---------- صفحات التطبيقات (٢ و٣): تطبيقات مثبتة فعلاً ---------- */
+  var hiddenApps = {};
+  try {
+    var hh = JSON.parse(localStorage.getItem('hidden_apps') || '[]');
+    for (var hi = 0; hi < hh.length; hi++) hiddenApps[hh[hi]] = 1;
+  } catch (e) {}
+  function isHiddenApp(p) { return !!hiddenApps[p]; }
+  function saveHidden() {
+    var arr = [];
+    for (var k in hiddenApps) if (hiddenApps[k]) arr.push(k);
+    try { localStorage.setItem('hidden_apps', JSON.stringify(arr)); } catch (e) {}
+  }
+  function toggleAppVis(p) {
+    if (hiddenApps[p]) delete hiddenApps[p]; else hiddenApps[p] = 1;
+    saveHidden();
+    fillAppPages();
+    var row = document.getElementById('ap_' + p);
+    if (row) row.classList.toggle('off', !!hiddenApps[p]);
+  }
+  function openAppsPicker() {
+    var ov = document.getElementById('appsOv'), list = document.getElementById('appsList');
+    if (!ov || !list) return;
+    var arr = [];
+    try { arr = JSON.parse(Native.apps() || '[]'); } catch (e) {}
+    var SKIP = {'com.android.dialer':1,'com.android.contacts':1,'com.android.camera2':1,'com.android.camera':1,
+                'com.google.android.dialer':1,'com.android.phone':1,'com.google.android.contacts':1,
+                'com.sec.android.app.camera':1,'org.smarttube.stable':1,'com.nwd.radio':1,
+                'com.google.android.apps.maps':1,'com.google.android.apps.youtube.music':1,
+                'sa.hudhud.maps':1,'com.android.settings':1,'com.omar.carlauncher':1};
+    var html = '';
+    for (var i = 0; i < arr.length; i++) {
+      var a = arr[i];
+      if (!a || !a.p || SKIP[a.p]) continue;
+      var off = isHiddenApp(a.p);
+      var ic = '';
+      try { ic = Native.icon(a.p) || ''; } catch (e) {}
+      html += '<div class="ap-row' + (off ? ' off' : '') + '" id="ap_' + a.p + '" onclick="toggleAppVis(\'' + a.p + '\')">' +
+              (ic ? '<img class="ap-ico" src="' + ic + '">' : '<div class="ap-ico"></div>') +
+              '<span class="ap-name">' + a.n + '</span>' +
+              '<span class="ap-chk' + (off ? '' : ' on') + '">✓</span></div>';
+    }
+    list.innerHTML = html || '<div class="micro" style="padding:20px">ما فيه تطبيقات</div>';
+    ov.classList.add('on');
+  }
+  function closeAppsPicker() { var ov = document.getElementById('appsOv'); if (ov) ov.classList.remove('on'); }
+
+  function fillAppPages() {
+    var pgs = [document.getElementById('page2'), document.getElementById('page3')];
+    if (!pgs[0]) return;
+    var list = [];
+    try { list = JSON.parse(Native.apps() || '[]'); } catch (e) { list = []; console.log('apps parse error ' + e); }
+    console.log('apps count ' + list.length);
+    if (!list.length) {
+      list = [
+        {p:'com.google.android.apps.maps', n:'الخرائط'},
+        {p:'com.google.android.youtube', n:'يوتيوب'},
+        {p:'com.android.settings', n:'الإعدادات'},
+        {p:'com.android.chrome', n:'المتصفح'},
+        {p:'com.android.vending', n:'المتجر'},
+        {p:'com.alensw.PicFolder', n:'الصور'}
+      ];
+    }
+    var EXCLUDE = {'com.android.dialer':1, 'com.android.contacts':1, 'com.android.camera2':1,
+                   'com.android.camera':1, 'com.google.android.dialer':1, 'com.android.phone':1,
+                   'com.google.android.contacts':1, 'com.sec.android.app.camera':1,
+                   'org.smarttube.stable':1, 'com.nwd.radio':1, 'com.google.android.apps.maps':1,
+                   'com.google.android.apps.youtube.music':1, 'sa.hudhud.maps':1,
+                   'com.android.settings':1, 'com.omar.carlauncher':1};
+    var seen = {}, picked = [];
+    for (var i = 0; i < list.length && picked.length < 12; i++) {
+      var a = list[i];
+      if (!a || !a.p || seen[a.p] || EXCLUDE[a.p] || isHiddenApp(a.p)) continue;
+      seen[a.p] = 1; picked.push(a);
+    }
+    var idx = 0;
+    for (var k = 0; k < pgs.length; k++) {
+      var pg = pgs[k];
+      if (!pg) continue;
+      var slots = pg.querySelectorAll('.tile');
+      for (var j = 0; j < slots.length; j++) {
+        var app = picked[idx++];
+        var lbl = slots[j].querySelector('.lbl');
+        if (!app) { slots[j].style.display = 'none'; continue; }
+        slots[j].style.display = 'flex';
+        lbl.textContent = app.n;
+        try {
+          var ic = Native.icon(app.p) || '';
+          var oldIco = slots[j].querySelector('.appico');
+          if (oldIco) oldIco.parentNode.removeChild(oldIco);
+          if (ic) {
+            var im = document.createElement('img');
+            im.className = 'appico';
+            im.src = ic;
+            slots[j].insertBefore(im, slots[j].firstChild);
+            var gsvg = slots[j].querySelector('svg');
+            if (gsvg) gsvg.style.display = 'none';
+          }
+        } catch (e) { console.log('icon err ' + e); }
+        (function (sl, ap) {
+          sl.onclick = function () { try { Native.openApp(ap.p); } catch (e) {} };
+        })(slots[j], app);
+      }
+    }
+    console.log('app pages picked ' + picked.length);
+  }
+  window.rebuildApps = fillAppPages;
+  fillAppPages();
+
+  /* ---------- سحب داخل شبكة الأيقونات فقط ---------- */
+  (function pagerSwipe() {
+    var pager = document.getElementById('pager'), pages = document.getElementById('pages');
+    var startX = 0, dragging = false, page = 0, lastDx = 0, dragged = false;
+    function endSwipe(dx) {
+      if (!dragging) return;
+      dragging = false;
+      if (dx < -45 && page < 2) page++;
+      else if (dx > 45 && page > 0) page--;
+      pages.style.transition = 'transform .3s ease';
+      pages.style.transform = 'translateX(' + (page * 33.3333) + '%)';
+      var dots = document.querySelectorAll('.dots i');
+      for (var i = 0; i < dots.length; i++) dots[i].className = (i === page) ? 'on' : '';
+    }
+    pager.addEventListener('touchstart', function (e) {
+      if (!e.touches || !e.touches.length) return;
+      startX = e.touches[0].clientX; lastDx = 0; dragging = true; dragged = false; pages.style.transition = 'none';
+    }, {passive: true});
+    pager.addEventListener('touchmove', function (e) {
+      if (!dragging || !e.touches || !e.touches.length) return;
+      lastDx = e.touches[0].clientX - startX;
+      if (Math.abs(lastDx) > 8) {
+        dragged = true;
+        if (e.cancelable) e.preventDefault();   // لا تخلي السحب يتحوّل ضغطة على تطبيق
+      }
+      pages.style.transform = 'translateX(' + (page * 33.3333) + '%) translateX(' + lastDx + 'px)';
+    }, {passive: false});
+    pager.addEventListener('click', function (e) {
+      if (dragged) { e.preventDefault(); e.stopPropagation(); dragged = false; }
+    }, true);
+    pager.addEventListener('touchend', function (e) {
+      var dx = (e.changedTouches && e.changedTouches.length) ? e.changedTouches[0].clientX - startX : lastDx;
+      endSwipe(dx);
+    });
+    pager.addEventListener('touchcancel', function () { endSwipe(lastDx); });
+    /* سحب بالفأرة في معاينة الماك */
+    if (PREVIEW) {
+      function endDrag(dx) {
+        if (dx < -60 && page < 2) page++;
+        else if (dx > 60 && page > 0) page--;
+        pages.style.transition = 'transform .3s ease';
+        pages.style.transform = 'translateX(' + (page * 33.3333) + '%)';
+        var dts = document.querySelectorAll('.dots i');
+        for (var i = 0; i < dts.length; i++) dts[i].className = (i === page) ? 'on' : '';
+      }
+      pager.addEventListener('mousedown', function (e) {
+        startX = e.clientX; dragging = true; pages.style.transition = 'none'; e.preventDefault();
+      });
+      window.addEventListener('mousemove', function (e) {
+        if (!dragging) return;
+        pages.style.transform = 'translateX(' + (page * 33.3333) + '%) translateX(' + (e.clientX - startX) + 'px)';
+      });
+      window.addEventListener('mouseup', function (e) {
+        if (!dragging) return;
+        dragging = false;
+        endDrag(e.clientX - startX);
+      });
+    }
+    var wrap = document.createElement('div');
+    wrap.className = 'dots';
+    wrap.innerHTML = '<i class="on"></i><i></i><i></i>';
+    pager.appendChild(wrap);
+  })();
+
+  /* ---------- الثيم ---------- */
+  var themeMode = 'auto', sunriseMin = null, sunsetMin = null;
+  function setThemeClass(day) {
+    var want = day ? 'day' : '';
+    if (document.documentElement.className === want) return;
+    document.documentElement.className = want;
+    document.body.className = want;
+    for (var k in tileEls) {
+      if (tileEls[k].parentNode) tileEls[k].parentNode.removeChild(tileEls[k]);
+      delete tileEls[k];
+    }
+    tickMap();
+  }
+  function hhmm(iso) {
+    if (!iso) return null;
+    var t = iso.split('T')[1];
+    if (!t) return null;
+    var p = t.split(':');
+    return parseInt(p[0], 10) * 60 + parseInt(p[1], 10);
+  }
+  function evaluateTheme() {
+    if (themeMode !== 'auto') { setThemeClass(themeMode === 'day'); return; }
+    if (sunriseMin === null || sunsetMin === null) return;
+    var d = new Date();
+    var now = d.getHours() * 60 + d.getMinutes();
+    setThemeClass(now >= sunriseMin && now < sunsetMin);
+  }
+  function loadSun() {
+    var lat = LAT, lon = LON, p = '';
+    try { p = Native.pos(); } catch (e) { p = ''; }
+    if (p && p.indexOf(',') > 0) { var a = p.split(','); lat = parseFloat(a[0]); lon = parseFloat(a[1]); }
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
+          '&daily=sunrise,sunset&timezone=auto&forecast_days=1')
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        sunriseMin = hhmm(j.daily.sunrise[0]);
+        sunsetMin = hhmm(j.daily.sunset[0]);
+        evaluateTheme();
+      }).catch(function () {});
+  }
+  window.setTheme = function (t) { themeMode = (t === 'day' || t === 'night') ? t : 'auto'; evaluateTheme(); try { paintThemeSeg(); } catch (e) {} };
+  loadSun();
+  setInterval(loadSun, 1800000);
+  setInterval(evaluateTheme, 60000);
+  evaluateTheme();
+
+  /* ---------- شريط تبديل الوضع: يظهر في المتصفح فقط ---------- */
+  if (PREVIEW) {
+    var bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:99999;display:flex;gap:8px;direction:rtl';
+    bar.innerHTML =
+      '<button id="pvPark" style="all:unset;cursor:pointer;background:#1b2333;color:#e8edf5;border:1px solid #2f3a4f;border-radius:10px;padding:8px 14px;font:14px -apple-system,system-ui">وقوف</button>' +
+      '<button id="pvDrive" style="all:unset;cursor:pointer;background:#1b2333;color:#e8edf5;border:1px solid #2f3a4f;border-radius:10px;padding:8px 14px;font:14px -apple-system,system-ui">قيادة</button>';
+    document.body.appendChild(bar);
+    document.getElementById('pvPark').onclick = function () { window.__simSpeed = 0; setCarState('park', 0); };
+    document.getElementById('pvDrive').onclick = function () { window.__simSpeed = 60; setCarState('drive', 60); };
+  }
+
+  if (location.hash === '#day') window.setTheme('day');
+  if (location.hash === '#drive' || location.hash === '#daydrive') setCarState('drive', PREVIEW ? 60 : 0);
+</script>
+
+  <div class="opts-ov" id="oilOv" style="z-index:9650">
+    <div class="opts-card" style="width:520px">
+      <div class="opts-head"><span>تسجيل تغيير الزيت</span><div class="grow"></div><div class="opts-x" onclick="closeOil()">✕</div></div>
+      <div style="margin-top:10px">
+        <div class="opt-row"><span>الكيلو عند التغيير</span><input id="oilOdo" class="oin" type="number" inputmode="numeric" placeholder="45200"></div>
+        <div class="opt-row"><span>التاريخ</span><input id="oilDate" class="oin" type="date"></div>
+        <div class="opt-row"><span>الفترة</span><div class="seg">
+          <div onclick="setOilInt(5000,180)" id="oi1">٥٠٠٠ كم</div><div onclick="setOilInt(10000,365)" id="oi2">١٠٠٠٠ كم</div></div></div>
+      </div>
+      <div class="opt-btn" style="margin-top:14px;text-align:center" onclick="saveOil()">حفظ</div>
+    </div>
+  </div>
+
+  <div class="opts-ov" id="appsOv" style="z-index:9600">
+    <div class="opts-card" style="width:760px">
+      <div class="opts-head"><span>تطبيقات الشبكة</span><div class="grow"></div><div class="opts-x" onclick="closeAppsPicker()">✕</div></div>
+      <div class="micro" style="margin-top:6px">اللي تشيل عليه ✓ يظهر في الصفحات، واللي بدون ✓ يختفي.</div>
+      <div class="ap-grid" id="appsList"></div>
+    </div>
+  </div>
+
+  <div class="opts-ov" id="optsOv">
+    <div class="opts-card">
+      <div class="opts-head"><span>خيارات اللانشر</span><div class="grow"></div><div class="opts-x" onclick="closeOpts()">✕</div></div>
+      <div style="margin-top:10px">
+        <div class="opt-row"><span>الوضع</span><div class="seg" id="segTheme">
+          <div onclick="setTheme('auto')" id="thAuto">تلقائي</div><div onclick="setTheme('day')" id="thDay">نهاري</div><div onclick="setTheme('night')" id="thNight">ليلي</div></div></div>
+        <div class="opt-row"><span>شكل الواجهة</span><div class="seg">
+          <div onclick="setUiStyle('float')" id="stFloat">عائم</div><div onclick="setUiStyle('cards')" id="stCards">مربعات</div></div></div>
+        <div class="opt-row"><span>سطوع الشاشة</span><div class="seg">
+          <div onclick="setBright(0.4)">منخفض</div><div onclick="setBright(0.7)">متوسط</div><div onclick="setBright(1)">عالي</div></div></div>
+        <div class="opt-row"><span>تغيير الزيت</span><div class="opt-btn" onclick="openOil()">تسجيل</div></div>
+        <div class="opt-row"><span>تطبيقات الشبكة</span><div class="opt-btn" onclick="openAppsPicker()">اختيار التطبيقات</div></div>
+        <div class="opt-row"><span>شريط الصوتيات</span><div class="seg">
+          <div onclick="setMediaBar(true)">إظهار</div><div onclick="setMediaBar(false)">إخفاء</div></div></div>
+        <div class="opt-row"><span>الجهاز</span><div class="opt-info" id="optInfo">—</div></div>
+        <div class="opt-row"><span>إعادة تشغيل اللانشر</span><div class="opt-btn" onclick="restartApp()">إعادة التشغيل</div></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
