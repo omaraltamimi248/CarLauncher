@@ -68,6 +68,7 @@ public class MainActivity extends Activity {
     static MainActivity instance;
     private WebView web;
     private LocationManager lm;
+    private LocationListener locListener;
     private String currentState = "";
     private float speedKmh = -1f;
     private float bearingDeg = -1f;        // آخر اتجاه صالح — يبقى محفوظ عند السرعة صفر
@@ -229,7 +230,7 @@ public class MainActivity extends Activity {
             if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
-            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, new LocationListener() {
+            locListener = new LocationListener() {
                 @Override public void onLocationChanged(Location l) {
                     if (l == null) return;
                     long now = System.currentTimeMillis();
@@ -256,7 +257,8 @@ public class MainActivity extends Activity {
                 @Override public void onStatusChanged(String p, int s, Bundle b) {}
                 @Override public void onProviderEnabled(String p) {}
                 @Override public void onProviderDisabled(String p) {}
-            }, Looper.getMainLooper());
+            };
+            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, locListener, Looper.getMainLooper());
             Location last = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER);
             if (last != null) {
                 lastLat = last.getLatitude(); lastLon = last.getLongitude();
@@ -327,6 +329,12 @@ public class MainActivity extends Activity {
     protected void onDestroy() {
         handler.removeCallbacks(tick);
         handler.removeCallbacks(netTick);
+        handler.removeCallbacks(btTick);
+        try {
+            if (lm != null && locListener != null) lm.removeUpdates(locListener);
+        } catch (Exception ignored) {}
+        locListener = null;
+        if (instance == this) instance = null;
         super.onDestroy();
     }
 
