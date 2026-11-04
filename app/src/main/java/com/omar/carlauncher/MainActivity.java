@@ -180,8 +180,9 @@ public class MainActivity extends Activity {
     private void maybeAutoCheckUpdate() {
         long last = 0;
         try { last = getSharedPreferences("ui", 0).getLong("upd_last", 0); } catch (Exception ignored) {}
-        if (System.currentTimeMillis() - last < UPDATE_INTERVAL_MS) return;
-        markUpdateChecked();
+        long ago = System.currentTimeMillis() - last;
+        android.util.Log.d("CarLauncher", "update: auto-check trigger, last=" + (ago / 60000) + "m ago");
+        if (ago < UPDATE_INTERVAL_MS) return;
         checkUpdates(false);
     }
 
@@ -227,11 +228,13 @@ public class MainActivity extends Activity {
 
     void checkUpdates(final boolean install) {
         if (!updateBusy.compareAndSet(false, true)) return;
+        android.util.Log.d("CarLauncher", "update: check start install=" + install);
         jsUpd("checking", "جارٍ التحقق…");
         new Thread(new Runnable() { public void run() {
             try {
                 String body = httpGet(UPDATE_API);
                 org.json.JSONObject o = new org.json.JSONObject(body);
+                markUpdateChecked();   // نختم الوقت بعد نجاح الطلب فقط، عشان الفشل يعيد المحاولة
                 String tag = o.optString("tag_name", "");
                 String apkUrl = null;
                 org.json.JSONArray assets = o.optJSONArray("assets");
@@ -284,6 +287,7 @@ public class MainActivity extends Activity {
                     jsUpd("error", "التثبيت التلقائي فشل · الملف: " + apk.getAbsolutePath());
                 }
             } catch (Exception e) {
+                android.util.Log.d("CarLauncher", "update: error " + e);
                 jsUpd("error", "تعذر التحقق: " + e.getMessage());
             } finally {
                 updateBusy.set(false);

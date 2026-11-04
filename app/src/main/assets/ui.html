@@ -749,7 +749,7 @@
     try { paintAdhanSeg(); } catch (e) {}
     try {
       var ui = document.getElementById('updInfo');
-      if (ui && !ui.textContent) ui.textContent = Native.appVersion() || '—';
+      if (ui) ui.textContent = Native.appVersion() || '—';
     } catch (e) {}
     ov.classList.add('on');
   }
