@@ -60,8 +60,11 @@ import java.util.List;
 
 public class MainActivity extends Activity {
 
-    private static final float MOVE_KMH = 2f;
-    private static final float MOVE_METERS = 6f;
+    private static final float ENTER_KMH = 5f;        // سرعة تدخل وضع القيادة لو استمرت
+    private static final float ENTER_FAST_KMH = 15f;  // سرعة واضحة تدخل فوراً
+    private static final float ENTER_METERS = 30f;    // مسافة متراكمة خلال فترة الثبات
+    private static final long ENTER_HOLD_MS = 8000L;  // لازم تستمر ٨ ثواني
+    private static final float STOP_KMH = 1.5f;
     private static final long DRIVE_EXIT_MS = 5 * 60 * 1000L;
     private static final long FIX_STALE_MS = 10_000L;
 
@@ -74,6 +77,9 @@ public class MainActivity extends Activity {
     private float bearingDeg = -1f;        // آخر اتجاه صالح — يبقى محفوظ عند السرعة صفر
     private long lastFixAt = 0;
     private long lastMoveAt = 0;
+    private long fastSince = 0;          // بداية تجاوز سرعة الدخول باستمرار
+    private long slowSince = 0;
+    private double fastLat = 0, fastLon = 0;
     private boolean driveActive = false;
     private boolean manualPark = false;
     private boolean hasLastFix = false;
@@ -466,26 +472,8 @@ public class MainActivity extends Activity {
             locListener = new LocationListener() {
                 @Override public void onLocationChanged(Location l) {
                     if (l == null) return;
-                    long now = System.currentTimeMillis();
-                    boolean moved = false;
-
                     float kmh = l.hasSpeed() ? l.getSpeed() * 3.6f : -1f;
-                    if (kmh >= MOVE_KMH) moved = true;
-
-                    if (hasLastFix) {
-                        float[] d = new float[3];
-                        Location.distanceBetween(lastLat, lastLon, l.getLatitude(), l.getLongitude(), d);
-                        if (d[0] >= MOVE_METERS) moved = true;
-                        if (moved && kmh < 1f) bearingDeg = (d[2] + 360f) % 360f;
-                    }
-                    if (l.hasBearing() && kmh >= 1f) bearingDeg = (l.getBearing() + 360f) % 360f;
-
-                    lastLat = l.getLatitude();
-                    lastLon = l.getLongitude();
-                    hasLastFix = true;
-                    lastFixAt = now;
-                    speedKmh = (kmh >= 0f) ? kmh : (moved ? MOVE_KMH : 0f);
-                    if (moved) lastMoveAt = now;
+                    applyMotion(kmh, l.getLatitude(), l.getLongitude(), System.currentTimeMillis(), l.hasBearing() ? l.getBearing() : -1f);
                 }
                 @Override public void onStatusChanged(String p, int s, Bundle b) {}
                 @Override public void onProviderEnabled(String p) {}
@@ -501,11 +489,56 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
     }
 
+    /** منطق الحركة: يدخل وضع القيادة فقط بعد حركة واضحة ومستمرة */
+    void applyMotion(float kmh, double lat, double lon, long now, float bearing) {
+        boolean moved = false;
+
+        // استنتاج السرعة من فرق الموقع لو الجهاز ما يرسل speed
+        if (kmh < 0f && hasLastFix) {
+            float[] dd = new float[3];
+            Location.distanceBetween(lastLat, lastLon, lat, lon, dd);
+            long dt = now - lastFixAt;
+            if (dt > 300 && dt < 15000) kmh = (dd[0] / (dt / 1000f)) * 3.6f;
+        }
+
+        // عدّاد الثبات: يبدأ أول ما تتجاوز السرعة حد الدخول، وينصفّر إذا وقفت ٣ ثواني متصلة
+        if (kmh >= ENTER_KMH) {
+            if (fastSince == 0) { fastSince = now; fastLat = lat; fastLon = lon; }
+            slowSince = 0;
+        } else if (kmh >= 0f && kmh < STOP_KMH) {
+            if (slowSince == 0) slowSince = now;
+            if (now - slowSince >= 3000L) { fastSince = 0; slowSince = 0; }
+        } else {
+            slowSince = 0;
+        }
+
+        if (fastSince > 0) {
+            float[] d0 = new float[3];
+            Location.distanceBetween(fastLat, fastLon, lat, lon, d0);
+            boolean held = (now - fastSince) >= ENTER_HOLD_MS;
+            moved = (held && d0[0] >= ENTER_METERS) || kmh >= ENTER_FAST_KMH;
+        }
+
+        if (hasLastFix) {
+            float[] d = new float[3];
+            Location.distanceBetween(lastLat, lastLon, lat, lon, d);
+            if (moved && kmh < 1f) bearingDeg = (d[2] + 360f) % 360f;
+        }
+        if (bearing >= 0f && kmh >= 1f) bearingDeg = bearing;
+
+        lastLat = lat;
+        lastLon = lon;
+        hasLastFix = true;
+        lastFixAt = now;
+        speedKmh = (kmh >= 0f) ? kmh : (moved ? ENTER_KMH : 0f);
+        if (moved) lastMoveAt = now;
+    }
+
     private void updateState() {
         long now = System.currentTimeMillis();
         boolean fresh = lastFixAt > 0 && (now - lastFixAt) < FIX_STALE_MS;
         float shown = fresh ? Math.max(0f, speedKmh) : 0f;
-        boolean moving = fresh && lastMoveAt > 0 && (now - lastMoveAt) < 4000;
+        boolean moving = fresh && lastMoveAt > 0 && (now - lastMoveAt) < 6000L;
 
         if (manualPark && (now - lastMoveAt) > 10_000L) manualPark = false;
         if (moving && !manualPark) driveActive = true;

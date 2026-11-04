@@ -126,6 +126,20 @@
   .day #drive .scrim-l { background:linear-gradient(to top, rgba(236,240,246,.95) 0%, rgba(236,240,246,.65) 40%, rgba(236,240,246,0) 100%); }
   .day #drive .mapfade { background:linear-gradient(180deg, rgba(236,240,246,.35) 0%, rgba(236,240,246,0) 22%, rgba(236,240,246,0) 70%, rgba(236,240,246,.5) 100%); }
 
+  /* ---------- خيار: الخريطة داخل مربع ---------- */
+  body.map-box #drive .map { top:58px; left:30px; width:622px; height:430px;
+    border-radius:26px; box-shadow:0 18px 44px rgba(0,0,0,.45); }
+  body.map-box #drive .scrim-t,
+  body.map-box #drive .scrim-r,
+  body.map-box #drive .scrim-l,
+  body.map-box #drive .mapfade { display:none; }
+  body.map-box #drive .compass { top:12px; left:12px; }
+  body.map-box #drive .maptilt { top:12px; left:62px; right:auto; }
+  body.map-box #drive .mapbtn { left:50%; bottom:14px; margin-left:-74px; }
+  body.map-box #drive .speedpill { right:auto; left:14px; bottom:14px; }
+  body.map-box #drive .attrib { right:12px; left:auto; bottom:7px; }
+  body.map-box #drive .nogps { top:12px; left:50%; margin-left:-92px; }
+
   /* ---------- DRIVE ---------- */
   .drive { position:absolute; top:0; left:0; width:1024px; height:600px; padding:58px 34px 24px; display:flex; z-index:1; }
   .drive > .left { order:2; margin-right:24px; }
@@ -705,10 +719,11 @@
   }
   window.addEventListener('resize', applyNarrow);
   applyNarrow();
-  applyUiStyle();
 
   var uiStyle = 'float';
   try { uiStyle = localStorage.getItem('ui_style') || 'float'; } catch (e) {}
+  var mapBox = false;
+  try { mapBox = localStorage.getItem('map_box') === '1'; } catch (e) {}
   function applyUiStyle() {
     document.body.classList.toggle('style-cards', uiStyle === 'cards');
     var a = document.getElementById('stFloat'), b = document.getElementById('stCards');
@@ -720,6 +735,20 @@
     try { localStorage.setItem('ui_style', uiStyle); } catch (e) {}
     applyUiStyle();
   }
+  function applyMapBox() {
+    document.body.classList.toggle('map-box', !!mapBox);
+    var a = document.getElementById('mapFullSeg'), b = document.getElementById('mapBoxSeg');
+    if (a) a.classList.toggle('on', !mapBox);
+    if (b) b.classList.toggle('on', !!mapBox);
+  }
+  function setMapBox(on) {
+    mapBox = !!on;
+    try { localStorage.setItem('map_box', mapBox ? '1' : '0'); } catch (e) {}
+    applyMapBox();
+    try { drawMap(); } catch (e) {}
+  }
+  applyUiStyle();
+  applyMapBox();
   function toggleState() {
     try { Native.forceState(state === 'drive' ? 'park' : 'drive'); } catch (e) {}
   }
@@ -747,6 +776,7 @@
     }
     paintThemeSeg();
     try { paintAdhanSeg(); } catch (e) {}
+    try { applyMapBox(); } catch (e) {}
     try {
       var ui = document.getElementById('updInfo');
       if (ui) ui.textContent = Native.appVersion() || '—';
@@ -1781,6 +1811,8 @@
           <div onclick="setTheme('auto')" id="thAuto">تلقائي</div><div onclick="setTheme('day')" id="thDay">نهاري</div><div onclick="setTheme('night')" id="thNight">ليلي</div></div></div>
         <div class="opt-row"><span>شكل الواجهة</span><div class="seg">
           <div onclick="setUiStyle('float')" id="stFloat">عائم</div><div onclick="setUiStyle('cards')" id="stCards">مربعات</div></div></div>
+        <div class="opt-row"><span>الخريطة</span><div class="seg">
+          <div onclick="setMapBox(false)" id="mapFullSeg">كامل الشاشة</div><div onclick="setMapBox(true)" id="mapBoxSeg">داخل مربع</div></div></div>
         <div class="opt-row"><span>سطوع الشاشة</span><div class="seg">
           <div onclick="setBright(0.4)">منخفض</div><div onclick="setBright(0.7)">متوسط</div><div onclick="setBright(1)">عالي</div></div></div>
         <div class="opt-row"><span>تغيير الزيت</span><div class="opt-btn" onclick="openOil()">تسجيل</div></div>
