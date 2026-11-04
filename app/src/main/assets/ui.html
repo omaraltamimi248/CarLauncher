@@ -490,19 +490,19 @@
     background:radial-gradient(1200px 700px at 50% -10%, #16202E 0%, #080A0E 62%); }
   .setup-ov.on { display:flex; }
   .setup-card { width:560px; border-radius:24px; background:linear-gradient(160deg,#15181E,#0E1115);
-    border:1px solid rgba(255,255,255,.08); box-shadow:0 30px 80px rgba(0,0,0,.6); padding:16px 22px 14px; }
-  .setup-dots { display:flex; gap:8px; justify-content:center; margin-bottom:12px; direction:ltr; }
+    border:1px solid rgba(255,255,255,.08); box-shadow:0 30px 80px rgba(0,0,0,.6); padding:10px 20px 10px; }
+  .setup-dots { display:flex; gap:8px; justify-content:center; margin-bottom:8px; direction:ltr; }
   .setup-dots i { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.18); }
   .setup-dots i.on { background:#4C82E8; width:22px; border-radius:6px; }
-  .setup-h { font-size:24px; font-weight:600; color:#EEF2F8; }
-  .setup-sub { font-size:13.5px; color:#8A93A1; margin-top:5px; }
+  .setup-h { font-size:20px; font-weight:600; color:#EEF2F8; }
+  .setup-sub { font-size:13px; color:#8A93A1; margin-top:3px; }
   .setup-step { display:none; }
   .setup-step.on { display:block; }
   .setup-opts { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
   .setup-opt { display:block; width:100%; box-sizing:border-box; padding:15px 18px; border-radius:16px; font-size:16.5px; background:rgba(255,255,255,.05);
     border:1px solid rgba(255,255,255,.08); color:#C9D2DE; font-size:15px; }
   .setup-opt.on { background:rgba(76,130,232,.22); border-color:rgba(143,182,255,.45); color:#EAF1FF; }
-  .setup-row { display:flex; align-items:center; justify-content:space-between; margin-top:10px;
+  .setup-row { display:flex; align-items:center; justify-content:space-between; margin-top:6px;
     padding:11px 14px; border-radius:16px; background:rgba(255,255,255,.035);
     border:1px solid rgba(255,255,255,.06); }
   .setup-row .lbl { font-size:14.5px; color:#C9D2DE; }
@@ -510,26 +510,25 @@
   .setup-search input { flex:1; height:44px; border-radius:14px; background:rgba(255,255,255,.05);
     border:1px solid rgba(255,255,255,.09); color:#E9EEF6; padding:0 14px;
     font-family:inherit; font-size:14px; direction:rtl; }
-  .setup-foot { display:flex; align-items:center; margin-top:16px; gap:10px; }
+  .setup-foot { display:flex; align-items:center; margin-top:8px; gap:10px; }
   #stNext { flex:1; }
   #stBack { min-width:110px; }
-  .setup-btn { padding:12px 26px; border-radius:16px; font-size:16px; background:rgba(76,130,232,.28);
+  .setup-btn { padding:10px 24px; border-radius:16px; font-size:16px; background:rgba(76,130,232,.28);
     border:1px solid rgba(143,182,255,.45); color:#EAF1FF; font-size:15px; text-align:center; }
   .setup-btn.ghost { background:rgba(255,255,255,.05); border-color:rgba(255,255,255,.08); color:#AEB7C4; }
   .setup-btn.sm { padding:8px 16px; font-size:13.5px; border-radius:12px; }
   .setup-vol { display:flex; align-items:center; gap:10px; }
   .setup-vol input { width:180px; }
   .setup-vol span { font-size:12.5px; color:#8A93A1; direction:ltr; }
-  .setup-mini-h { font-size:12.5px; color:#7C8798; margin-top:10px; }
+  .setup-mini-h { font-size:12px; color:#7C8798; margin-top:5px; }
   .setup-prevs { display:flex; gap:10px; margin-top:6px; }
-  .prev { flex:1; border-radius:14px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); padding:8px; }
-  .prev.on { border-color:rgba(143,182,255,.5); background:rgba(76,130,232,.14); }
-  .prev .shot { position:relative; height:56px; border-radius:9px; overflow:hidden; background:linear-gradient(135deg,#26303F,#0F141B); }
-  .prev .lbl { display:block; text-align:center; font-size:12.5px; color:#AEB7C4; margin-top:6px; }
-  .m-map { position:absolute; background:linear-gradient(150deg,#5688B5,#22313F); }
-  .m-panel { position:absolute; background:rgba(8,11,15,.78); }
-  .m-card { position:absolute; border-radius:6px; background:rgba(255,255,255,.20); border:1px solid rgba(255,255,255,.18); }
-  .m-line { position:absolute; height:3px; border-radius:2px; background:rgba(226,236,250,.55); }
+  .pvgrid { display:flex; gap:8px; margin-top:4px; }
+  .pvcell { flex:1; border-radius:12px; border:1px solid rgba(255,255,255,.07);
+    background:rgba(255,255,255,.03); padding:4px; }
+  .pvcell.on { border-color:rgba(143,182,255,.55); background:rgba(76,130,232,.16); }
+  .pvcell img { display:block; width:100%; height:92px; object-fit:cover; border-radius:9px; }
+  .pvcell .lbl { display:block; text-align:center; font-size:12.5px; color:#C9D2DE; margin-top:4px; }
+  .pvcell.on .lbl { color:#EAF1FF; }
   .setup-cities { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
   .city { flex:0 0 calc(25% - 6px); box-sizing:border-box; text-align:center; padding:9px 4px; border-radius:12px;
     background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); font-size:14px; color:#C9D2DE; }
@@ -1902,6 +1901,7 @@
         <div class="setup-sub">نستخدمها للطقس ومواقيت الصلاة</div>
         <div class="setup-cities" id="cityGrid">
           <div class="city on" data-lat="27.5236" data-lon="41.6925" onclick="__st.cityPick(this)">حائل</div>
+          <div class="city" onclick="__st.cityGps(this)">موقع السيارة</div>
           <div class="city" data-lat="24.7136" data-lon="46.6753" onclick="__st.cityPick(this)">الرياض</div>
           <div class="city" data-lat="21.4858" data-lon="39.1925" onclick="__st.cityPick(this)">جدة</div>
           <div class="city" data-lat="21.3891" data-lon="39.8579" onclick="__st.cityPick(this)">مكة</div>
@@ -1916,7 +1916,6 @@
           <div class="city" data-lat="17.4917" data-lon="44.1322" onclick="__st.cityPick(this)">نجران</div>
           <div class="city" data-lat="16.8892" data-lon="42.5511" onclick="__st.cityPick(this)">جيزان</div>
           <div class="city" data-lat="28.434" data-lon="45.9636" onclick="__st.cityPick(this)">حفر الباطن</div>
-          <div class="city" onclick="__st.cityGps(this)">موقع السيارة</div>
         </div>
         <div id="cityMsg" style="margin-top:8px;color:#8A93A1;font-size:12.5px"></div>
       </div>
@@ -1931,67 +1930,45 @@
             <div onclick="__st.theme('night')" data-v="night">ليلي</div>
           </div></div>
         <div class="setup-mini-h">الواجهة</div>
-        <div class="setup-prevs">
-          <div class="prev on" id="pUiFloat" onclick="__st.ui('float')">
-            <div class="shot">
-              <div class="m-panel" style="right:0;top:0;bottom:0;width:44%;opacity:.55"></div>
-              <div class="m-line" style="right:12px;top:16px;width:26%"></div>
-              <div class="m-line" style="right:12px;top:28px;width:32%"></div>
-              <div class="m-line" style="right:12px;top:40px;width:20%"></div>
-              <div class="m-line" style="right:12px;top:52px;width:28%"></div>
-            </div><span class="lbl">عائم</span>
-          </div>
-          <div class="prev" id="pUiCards" onclick="__st.ui('cards')">
-            <div class="shot">
-              <div class="m-card" style="right:10px;top:10px;width:34%;height:24px"></div>
-              <div class="m-card" style="right:10px;top:40px;width:34%;height:22px"></div>
-            </div><span class="lbl">مربعات</span>
-          </div>
+        <div class="pvgrid">
+          <div class="pvcell on" id="pUiFloat" onclick="__st.ui('float')">
+            <img src="pv_ui_float.jpg" alt=""><span class="lbl">عائم</span></div>
+          <div class="pvcell" id="pUiCards" onclick="__st.ui('cards')">
+            <img src="pv_ui_cards.jpg" alt=""><span class="lbl">مربعات</span></div>
         </div>
         <div class="setup-mini-h">الخريطة</div>
-        <div class="setup-prevs">
-          <div class="prev on" id="pMapFull" onclick="__st.map(0)">
-            <div class="shot">
-              <div class="m-map" style="left:0;top:0;right:0;bottom:0"></div>
-              <div class="m-panel" style="right:0;top:0;bottom:0;width:36%"></div>
-              <div class="m-line" style="right:8px;top:16px;width:22%"></div>
-              <div class="m-line" style="right:8px;top:28px;width:18%"></div>
-            </div><span class="lbl">كامل الشاشة</span>
-          </div>
-          <div class="prev" id="pMapBox" onclick="__st.map(1)">
-            <div class="shot">
-              <div class="m-map" style="left:8px;top:9px;right:34%;bottom:9px;border-radius:8px"></div>
-              <div class="m-line" style="right:10px;top:18px;width:20%"></div>
-              <div class="m-line" style="right:10px;top:30px;width:16%"></div>
-            </div><span class="lbl">داخل مربع</span>
-          </div>
+        <div class="pvgrid">
+          <div class="pvcell on" id="pMapFull" onclick="__st.map(0)">
+            <img src="pv_map_full.jpg" alt=""><span class="lbl">كامل الشاشة</span></div>
+          <div class="pvcell" id="pMapBox" onclick="__st.map(1)">
+            <img src="pv_map_box.jpg" alt=""><span class="lbl">داخل مربع</span></div>
         </div>
       </div>
 
       <div class="setup-step" data-step="3">
         <div class="setup-h">الصلاة</div>
-        <div class="setup-sub">صوت مستقل للأذان والإقامة</div>
-        <div class="setup-row"><span class="lbl">الأذان</span>
-          <div class="setup-vol">
-            <input type="range" id="stVolAdhan" min="0" max="100" value="100" oninput="__st.vol('adhan', this.value)">
-            <span id="stVolAdhanLbl">100%</span>
-            <div class="setup-btn sm" id="btnAdhan" onclick="__st.preview('adhan')">تجربة</div>
-          </div></div>
-        <div class="setup-row"><span class="lbl">الإقامة</span>
-          <div class="setup-vol">
-            <input type="range" id="stVolIqama" min="0" max="100" value="100" oninput="__st.vol('iqama', this.value)">
-            <span id="stVolIqamaLbl">100%</span>
-            <div class="setup-btn sm" id="btnIqama" onclick="__st.preview('iqama')">تجربة</div>
-          </div></div>
+        <div class="setup-sub">اختر ماذا يعمل صوت الصلاة</div>
         <div class="setup-row"><span class="lbl">تشغيل الأذان تلقائياً</span>
           <div class="seg" id="segAdhan2">
             <div onclick="__st.tog('adhan',true)" data-v="1">نعم</div>
             <div onclick="__st.tog('adhan',false)" data-v="0">لا</div>
           </div></div>
+        <div class="setup-row"><span class="lbl">مستوى صوت الأذان</span>
+          <div class="setup-vol">
+            <input type="range" id="stVolAdhan" min="0" max="100" value="100" oninput="__st.vol('adhan', this.value)">
+            <span id="stVolAdhanLbl">100%</span>
+            <div class="setup-btn sm" id="btnAdhan" onclick="__st.preview('adhan')">تجربة</div>
+          </div></div>
         <div class="setup-row"><span class="lbl">تشغيل الإقامة</span>
           <div class="seg" id="segIqama2">
             <div onclick="__st.tog('iqama',true)" data-v="1">نعم</div>
             <div onclick="__st.tog('iqama',false)" data-v="0">لا</div>
+          </div></div>
+        <div class="setup-row"><span class="lbl">مستوى صوت الإقامة</span>
+          <div class="setup-vol">
+            <input type="range" id="stVolIqama" min="0" max="100" value="100" oninput="__st.vol('iqama', this.value)">
+            <span id="stVolIqamaLbl">100%</span>
+            <div class="setup-btn sm" id="btnIqama" onclick="__st.preview('iqama')">تجربة</div>
           </div></div>
       </div>
 
