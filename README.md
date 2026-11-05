@@ -5,7 +5,7 @@
 ![الإصدار](https://img.shields.io/badge/version-1.0.6-4C82E8?style=flat-square)
 ![أندرويد](https://img.shields.io/badge/Android-10%20(API%2029)-3DDC84?style=flat-square)
 ![الترخيص](https://img.shields.io/badge/license-MIT-3DA639?style=flat-square)
-![الحجم](https://img.shields.io/badge/APK-322%20KB-6E7681?style=flat-square)
+![الحجم](https://img.shields.io/badge/APK-510%20KB-6E7681?style=flat-square)
 
 <p align="center">
   <img src="docs/park.jpg" width="48%" alt="وضع الوقوف">
