@@ -89,6 +89,7 @@ public class MainActivity extends Activity {
     private static final String BT_NODE = "/sys/devices/platform/bt-ctrl/nPOEN";
     private boolean btWantOff = false;
     private MediaPlayer sfxPlayer;
+    private String sfxAsset = null;
     private final Object sfxLock = new Object();
     private final java.util.concurrent.atomic.AtomicBoolean packRunning =
             new java.util.concurrent.atomic.AtomicBoolean(false);
@@ -749,7 +750,7 @@ public class MainActivity extends Activity {
                     mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
                         @Override public void onCompletion(MediaPlayer m) {
                             synchronized (sfxLock) {
-                                if (sfxPlayer == m) sfxPlayer = null;
+                                if (sfxPlayer == m) { sfxPlayer = null; sfxAsset = null; }
                             }
                             try { m.release(); } catch (Exception ignored) {}
                             if (duckOn && am != null) { try { am.abandonAudioFocus(afListener); } catch (Exception ignored) {} }
@@ -763,6 +764,7 @@ public class MainActivity extends Activity {
                     }
                     mp.start();
                     sfxPlayer = mp;
+                    sfxAsset = asset;
                 }
                 android.util.Log.d("CarLauncher", "sound " + asset);
             } catch (Exception e) {
@@ -779,6 +781,7 @@ public class MainActivity extends Activity {
                     try { sfxPlayer.stop(); } catch (Exception ignored) {}
                     try { sfxPlayer.release(); } catch (Exception ignored) {}
                     sfxPlayer = null;
+                    sfxAsset = null;
                 }
             }
             if (duckOn && am != null) { try { am.abandonAudioFocus(afListener); } catch (Exception ignored) {} }
@@ -1137,11 +1140,24 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface public int iqamaVolume() { return Math.round(iqamaVol * 100); }
 
-        /** تشغيل تجربة ٥ ثواني (adhan|iqama) */
+        /** تشغيل تجربة ٥ ثواني (adhan|iqama) — لا يعيد التشغيل لو نفس الصوت شغال */
         @JavascriptInterface public void previewSound(String which) {
-            playAsset("iqama".equals(which) ? "iqama.ogg" : "adhan.ogg");
+            String a = "iqama".equals(which) ? "iqama.ogg" : "adhan.ogg";
+            boolean playing;
+            synchronized (sfxLock) { playing = sfxPlayer != null && a.equals(sfxAsset); }
+            if (!playing) playAsset(a);
             handler.removeCallbacks(previewStop);
             handler.postDelayed(previewStop, 5000L);
+        }
+
+        /** يغيّر مستوى الصوت الحالي أثناء التشغيل */
+        @JavascriptInterface public void setPreviewVolume(String which, int pct) {
+            if (pct < 0) pct = 0; if (pct > 100) pct = 100;
+            float v = pct / 100f;
+            if ("iqama".equals(which)) iqamaVol = v; else adhanVol = v;
+            synchronized (sfxLock) {
+                if (sfxPlayer != null) { try { sfxPlayer.setVolume(v, v); } catch (Exception ignored) {} }
+            }
         }
 
         @JavascriptInterface public void stopPreview() {

@@ -519,7 +519,11 @@
   .setup-btn.sm { padding:8px 16px; font-size:13.5px; border-radius:12px; }
   .setup-vol { display:flex; align-items:center; gap:10px; }
   .setup-vol input { width:180px; }
-  .setup-vol span { font-size:12.5px; color:#8A93A1; direction:ltr; }
+  .setup-vol span { font-size:13px; color:#C9D2DE; min-width:18px; text-align:center; }
+  .vwrap { width:150px; }
+  .vwrap input[type=range] { width:150px; }
+  .ticks { display:flex; justify-content:space-between; padding:0 6px; margin-top:1px; }
+  .ticks i { width:2px; height:4px; background:rgba(255,255,255,.22); border-radius:1px; }
   .setup-mini-h { font-size:12px; color:#7C8798; margin-top:5px; }
   .setup-prevs { display:flex; gap:10px; margin-top:6px; }
   .pvgrid { display:flex; gap:8px; margin-top:4px; }
@@ -1956,8 +1960,11 @@
           </div></div>
         <div class="setup-row"><span class="lbl">مستوى صوت الأذان</span>
           <div class="setup-vol">
-            <input type="range" id="stVolAdhan" min="0" max="100" value="100" oninput="__st.vol('adhan', this.value)">
-            <span id="stVolAdhanLbl">100%</span>
+            <div class="vwrap">
+              <input type="range" id="stVolAdhan" min="1" max="10" step="1" value="10" oninput="__st.vol('adhan', this.value)">
+              <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+            <span id="stVolAdhanLbl">10</span>
             <div class="setup-btn sm" id="btnAdhan" onclick="__st.preview('adhan')">تجربة</div>
           </div></div>
         <div class="setup-row"><span class="lbl">تشغيل الإقامة</span>
@@ -1967,8 +1974,11 @@
           </div></div>
         <div class="setup-row"><span class="lbl">مستوى صوت الإقامة</span>
           <div class="setup-vol">
-            <input type="range" id="stVolIqama" min="0" max="100" value="100" oninput="__st.vol('iqama', this.value)">
-            <span id="stVolIqamaLbl">100%</span>
+            <div class="vwrap">
+              <input type="range" id="stVolIqama" min="1" max="10" step="1" value="10" oninput="__st.vol('iqama', this.value)">
+              <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+            <span id="stVolIqamaLbl">10</span>
             <div class="setup-btn sm" id="btnIqama" onclick="__st.preview('iqama')">تجربة</div>
           </div></div>
       </div>
@@ -1999,7 +2009,7 @@
 (function () {
   var ov = document.getElementById('setup');
   var S = { step: 1, city: 'حائل', lat: 27.5236, lon: 41.6925, theme: 'auto', ui: 'float', map: 0,
-            adhan: true, iqama: true, volAdhan: 100, volIqama: 100, btOff: false, autoUpd: true };
+            adhan: true, iqama: true, volAdhan: 10, volIqama: 10, btOff: false, autoUpd: true };
   function $(id) { return document.getElementById(id); }
   function mark(segId, val) {
     var el = $(segId); if (!el) return;
@@ -2045,7 +2055,7 @@
     try { setMapBox(!!S.map); } catch (e) {}
     try { adhanSoundOn = S.adhan; localStorage.setItem('adhan_sound', S.adhan ? '1' : '0'); } catch (e) {}
     try { iqamaSoundOn = S.iqama; localStorage.setItem('iqama_sound', S.iqama ? '1' : '0'); } catch (e) {}
-    try { Native.setAdhanVolume(S.volAdhan); Native.setIqamaVolume(S.volIqama); } catch (e) {}
+    try { Native.setAdhanVolume(S.volAdhan * 10); Native.setIqamaVolume(S.volIqama * 10); } catch (e) {}
     try { Native.stopPreview(); } catch (e) {}
     try { if (S.btOff && Native.btOn()) Native.btToggle(); } catch (e) {}
     try { Native.setAutoUpdate(!!S.autoUpd); } catch (e) {}
@@ -2053,6 +2063,21 @@
     try { loadPrayer(); } catch (e) {}
     try { drawMap(); } catch (e) {}
     ov.classList.remove('on');
+  }
+  var pvTimers = {};
+  function setPvBtn(which, playing) {
+    var b = $(which === 'adhan' ? 'btnAdhan' : 'btnIqama');
+    if (!b) return;
+    b.textContent = playing ? 'إيقاف' : 'تجربة';
+    b.setAttribute('data-on', playing ? '1' : '0');
+  }
+  function playPreview(which) {
+    try { Native.previewSound(which); } catch (e) {}
+    setPvBtn(which, true);
+    clearTimeout(pvTimers[which]);
+    pvTimers[which] = setTimeout(function () {
+      if ($(which === 'adhan' ? 'btnAdhan' : 'btnIqama').getAttribute('data-on') === '1') setPvBtn(which, false);
+    }, 5000);
   }
   window.__st = {
     cityPick: function (el) {
@@ -2078,23 +2103,29 @@
     map: function (v) { S.map = +v; paint(); },
     tog: function (k, v) { S[k] = !!v; paint(); },
     vol: function (which, v) {
-      v = parseInt(v, 10) || 0;
-      if (which === 'adhan') { S.volAdhan = v; $('stVolAdhanLbl').textContent = v + '%'; }
-      else { S.volIqama = v; $('stVolIqamaLbl').textContent = v + '%'; }
+      v = parseInt(v, 10) || 1;
+      if (v < 1) v = 1; if (v > 10) v = 10;
+      if (which === 'adhan') {
+        S.volAdhan = v; $('stVolAdhanLbl').textContent = v;
+        try { Native.setAdhanVolume(v * 10); } catch (e) {}
+      } else {
+        S.volIqama = v; $('stVolIqamaLbl').textContent = v;
+        try { Native.setIqamaVolume(v * 10); } catch (e) {}
+      }
+      try { Native.setPreviewVolume(which, v * 10); } catch (e) {}
+      playPreview(which);
     },
     preview: function (which) {
       var b = $(which === 'adhan' ? 'btnAdhan' : 'btnIqama');
-      var other = $(which === 'adhan' ? 'btnIqama' : 'btnAdhan');
-      var on = b.getAttribute('data-on') === '1';
-      try { Native.stopPreview(); } catch (e) {}
-      b.textContent = 'تجربة'; b.setAttribute('data-on', '0');
-      other.textContent = 'تجربة'; other.setAttribute('data-on', '0');
-      if (on) return;
-      try { Native.previewSound(which); } catch (e) {}
-      b.textContent = 'إيقاف'; b.setAttribute('data-on', '1');
-      setTimeout(function () {
-        if (b.getAttribute('data-on') === '1') { b.textContent = 'تجربة'; b.setAttribute('data-on', '0'); }
-      }, 5000);
+      if (b.getAttribute('data-on') === '1') {
+        try { Native.stopPreview(); } catch (e) {}
+        clearTimeout(pvTimers[which]);
+        setPvBtn(which, false);
+        return;
+      }
+      var other = which === 'adhan' ? 'iqama' : 'adhan';
+      clearTimeout(pvTimers[other]); setPvBtn(other, false);
+      playPreview(which);
     },
     next: function () { if (S.step < 5) { S.step++; paint(); } else finish(); },
     prev: function () { if (S.step > 1) { S.step--; paint(); } }
