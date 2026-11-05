@@ -2,7 +2,7 @@
 
 لانشر أندرويد خفيف لشاشة سيارة **1024×600** — واجهة عربية كاملة فيها الخريطة، مواقيت الصلاة، الطقس، والتطبيقات في شاشة واحدة، بدون أي مكتبة خارجية.
 
-![الإصدار](https://img.shields.io/badge/version-1.0.5-4C82E8?style=flat-square)
+![الإصدار](https://img.shields.io/badge/version-1.0.6-4C82E8?style=flat-square)
 ![أندرويد](https://img.shields.io/badge/Android-10%20(API%2029)-3DDC84?style=flat-square)
 ![الترخيص](https://img.shields.io/badge/license-MIT-3DA639?style=flat-square)
 ![الحجم](https://img.shields.io/badge/APK-322%20KB-6E7681?style=flat-square)
@@ -10,6 +10,15 @@
 <p align="center">
   <img src="docs/park.jpg" width="48%" alt="وضع الوقوف">
   <img src="docs/drive.jpg" width="48%" alt="وضع القيادة">
+</p>
+
+## أول تشغيل
+
+عند أول تشغيل تظهر لوحة إعداد من خمس خطوات: المدينة، شكل الواجهة الرئيسية، شكل وضع القيادة،
+الأذان والإقامة، والتلقائيات — وكلها قابلة للتغيير لاحقاً من الخيارات.
+
+<p align="center">
+  <img src="docs/setup.jpg" width="70%" alt="لوحة البداية">
 </p>
 
 ## المزايا
